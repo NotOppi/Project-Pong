@@ -1,6 +1,7 @@
 package pong.game;
 
 import javax.swing.JPanel;
+import javax.swing.JButton;
 import javax.swing.Timer;
 import java.awt.Color;
 import java.awt.Font;
@@ -18,6 +19,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private Paddle playerPaddle;
     private Paddle aiPaddle;
     private Ball ball;
+    
+    // UI components
+    private JButton startButton;
+    private JButton howToPlayButton;
+    private JButton closeInstructionsButton;
+    private boolean showingInstructions = false;
     
     // Game state
     private int playerScore = 0;
@@ -37,6 +44,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         setBackground(Color.BLACK);
         setFocusable(true);
         addKeyListener(this);
+        setLayout(null); // Use absolute positioning
+        
+        // Initialize UI components
+        initializeUI();
         
         // Initialize game objects
         int paddleHeight = 80;
@@ -51,10 +62,59 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         gameTimer.start(); // Start the timer right away for UI updates
     }
     
+    /**
+     * Initializes UI components
+     */
+    private void initializeUI() {
+        // Start Game button
+        startButton = new JButton("Start Game");
+        startButton.setBounds(PongGame.WIDTH / 2 - 75, PongGame.HEIGHT / 2 + 30, 150, 40);
+        startButton.setFocusable(false); // Don't steal keyboard focus
+        startButton.addActionListener(e -> {
+            startGame();
+            this.requestFocus(); // Return focus to game panel for keyboard input
+        });
+        add(startButton);
+        
+        // How To Play button
+        howToPlayButton = new JButton("How To Play");
+        howToPlayButton.setBounds(PongGame.WIDTH / 2 - 75, PongGame.HEIGHT / 2 + 80, 150, 40);
+        howToPlayButton.setFocusable(false);
+        howToPlayButton.addActionListener(e -> {
+            showingInstructions = true;
+            this.requestFocus();
+            repaint();
+        });
+        add(howToPlayButton);
+        
+        // Close Instructions button (X button)
+        closeInstructionsButton = new JButton("X");
+        closeInstructionsButton.setBounds(PongGame.WIDTH - 70, 20, 50, 30);
+        closeInstructionsButton.setFocusable(false);
+        closeInstructionsButton.addActionListener(e -> {
+            showingInstructions = false;
+            this.requestFocus();
+            repaint();
+        });
+        closeInstructionsButton.setVisible(false); // Initially hidden
+        add(closeInstructionsButton);
+    }
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         draw(g);
+        
+        // Show/hide buttons based on game state and instructions visibility
+        boolean showMainButtons = !gameRunning && !showingInstructions;
+        startButton.setVisible(showMainButtons);
+        howToPlayButton.setVisible(showMainButtons);
+        closeInstructionsButton.setVisible(showingInstructions);
+        
+        // Draw instructions overlay if needed
+        if (showingInstructions) {
+            drawInstructions(g);
+        }
     }
     
     /**
@@ -86,12 +146,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         g.drawString(String.valueOf(playerScore), PongGame.WIDTH / 2 - 50, 50);
         g.drawString(String.valueOf(aiScore), PongGame.WIDTH / 2 + 30, 50);
         
-        // Draw instructions if the game isn't running
-        if (!gameRunning) {
-            g.setFont(new Font("Arial", Font.PLAIN, 20));
-            g.drawString("Press SPACE to start", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 - 50);
-            g.drawString("Use W and S to move", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2);
-        }
+        // We no longer show the W and S instruction text here
+        // It's now in the How To Play overlay
         
         // Draw pause message if game is paused
         if (gamePaused && gameRunning) {
@@ -101,6 +157,40 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.setFont(new Font("Arial", Font.PLAIN, 20));
             g.drawString("Press SPACE to continue", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
         }
+    }
+
+     /**
+     * Draws the how-to-play instructions overlay
+     */
+    private void drawInstructions(Graphics g) {
+        // Draw semi-transparent background
+        g.setColor(new Color(0, 0, 0, 220)); // Almost black, semi-transparent
+        g.fillRect(0, 0, PongGame.WIDTH, PongGame.HEIGHT);
+        
+        // Draw instructions title
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 36));
+        g.drawString("How To Play", PongGame.WIDTH / 2 - 120, 80);
+        
+        // Draw instructions text
+        g.setFont(new Font("Arial", Font.PLAIN, 20));
+        String[] instructions = {
+            "• Use W key to move paddle up",
+            "• Use S key to move paddle down",
+            "• Score points by getting the ball past the AI paddle",
+            "• The ball will bounce at different angles depending",
+            "  on where it hits your paddle",
+            "• Press SPACE to pause/resume the game",
+            "• First player to reach 10 points wins!"
+        };
+        
+        int yPos = 150;
+        for (String line : instructions) {
+            g.drawString(line, PongGame.WIDTH / 2 - 200, yPos);
+            yPos += 40;
+        }
+        
+        // The Close (X) button is handled separately as a JButton
     }
     
     /**
