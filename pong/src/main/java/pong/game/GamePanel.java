@@ -145,11 +145,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private void checkCollision() {
         // Ball collision with paddles
         if (playerPaddle.intersects(ball)) {
-            ball.reverseXDirection();
+            // Use the new deflection method instead of simple reversal
+            ball.deflectFromPaddle(playerPaddle);
         }
         
         if (aiPaddle.intersects(ball)) {
-            ball.reverseXDirection();
+            // Use the new deflection method instead of simple reversal
+            ball.deflectFromPaddle(aiPaddle);
         }
     }
     
