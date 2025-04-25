@@ -2,7 +2,6 @@ package pong.game;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Rectangle;
 
 /**
  * Represents a paddle in the game that can be controlled by a player or AI.
@@ -41,11 +40,10 @@ public class Paddle {
     public void update() {
         y += yVelocity;
         
-        // Keep paddle within bounds
-        if (y < 0) {
+        // Keep paddle within screen bounds
+        if (y <= 0) {
             y = 0;
-        }
-        if (y + height > PongGame.HEIGHT) {
+        } else if (y + height >= PongGame.HEIGHT) {
             y = PongGame.HEIGHT - height;
         }
     }
@@ -59,18 +57,23 @@ public class Paddle {
     }
     
     /**
-     * Sets the vertical velocity of the paddle
+     * Checks if this paddle intersects with the given ball
+     * @param ball The ball to check collision with
+     * @return true if collision detected, false otherwise
      */
-    public void setYVelocity(int yVelocity) {
-        this.yVelocity = yVelocity;
+    public boolean intersects(Ball ball) {
+        // Create rectangle representations for collision detection
+        return ball.getX() < x + width &&
+               ball.getX() + ball.getWidth() > x &&
+               ball.getY() < y + height &&
+               ball.getY() + ball.getHeight() > y;
     }
     
     /**
-     * Checks if this paddle intersects with a ball
+     * Sets the paddle's vertical velocity
      */
-    public boolean intersects(Ball ball) {
-        return new Rectangle(x, y, width, height)
-            .intersects(new Rectangle(ball.getX(), ball.getY(), ball.getWidth(), ball.getHeight()));
+    public void setYVelocity(int yVelocity) {
+        this.yVelocity = yVelocity;
     }
     
     // Getters
@@ -78,7 +81,4 @@ public class Paddle {
     public int getY() { return y; }
     public int getWidth() { return width; }
     public int getHeight() { return height; }
-    
-    // Setters
-    public void setY(int y) { this.y = y; }
 }

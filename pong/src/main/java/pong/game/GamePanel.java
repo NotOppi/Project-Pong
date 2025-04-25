@@ -23,8 +23,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     // UI components
     private JButton startButton;
     private JButton howToPlayButton;
+    private JButton difficultyButton;
     private JButton closeInstructionsButton;
+    private JButton easyButton;
+    private JButton mediumButton;
+    private JButton hardButton;
+    private JButton backButton;
     private boolean showingInstructions = false;
+    private boolean showingDifficulty = false;
+    private String hoverDescription = "";
     
     // Game state
     private int playerScore = 0;
@@ -34,6 +41,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private boolean gameOver = false;
     private String winner = "";
     private final int WINNING_SCORE = 10;
+    
+    // Difficulty settings
+    public enum Difficulty {EASY, MEDIUM, HARD}
+    private Difficulty currentDifficulty = Difficulty.MEDIUM;
+    private int aiPaddleSpeed = 4; // Default for MEDIUM
+    private float aiReactionTime = 0.5f; // Default for MEDIUM
     
     // Timer for game loop
     private Timer gameTimer;
@@ -72,10 +85,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         // Start Game button
         startButton = new ModernButton("Start Game");
         startButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 30, 200, 45);
-        startButton.setFocusable(false); // Don't steal keyboard focus
+        startButton.setFocusable(false);
         startButton.addActionListener(e -> {
             startGame();
-            this.requestFocus(); // Return focus to game panel for keyboard input
+            this.requestFocus();
         });
         add(startButton);
         
@@ -85,23 +98,131 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         howToPlayButton.setFocusable(false);
         howToPlayButton.addActionListener(e -> {
             showingInstructions = true;
+            showingDifficulty = false;
             this.requestFocus();
             repaint();
             closeInstructionsButton.setVisible(true);
         });
         add(howToPlayButton);
         
-        // Close Instructions button (X button)
+        // Difficulty button
+        difficultyButton = new ModernButton("Difficulty Level");
+        difficultyButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 140, 200, 45);
+        difficultyButton.setFocusable(false);
+        difficultyButton.addActionListener(e -> {
+            showingDifficulty = true;
+            showingInstructions = false;
+            this.requestFocus();
+            repaint();
+        });
+        add(difficultyButton);
+        
+        // Close Instructions button
         closeInstructionsButton = new ModernButton("X", true);
         closeInstructionsButton.setBounds(PongGame.WIDTH - 60, 20, 40, 40);
         closeInstructionsButton.setFocusable(false);
         closeInstructionsButton.addActionListener(e -> {
             showingInstructions = false;
+            showingDifficulty = false;
             this.requestFocus();
             repaint();
         });
-        closeInstructionsButton.setVisible(false); // Initially hidden
+        closeInstructionsButton.setVisible(false);
         add(closeInstructionsButton);
+        
+        // Initialize difficulty selection buttons
+        initializeDifficultyButtons();
+    }
+
+    /**
+     * Initializes difficulty selection buttons
+     */
+    private void initializeDifficultyButtons() {
+        // Easy button
+        easyButton = new ModernButton("Easy");
+        easyButton.setBounds(PongGame.WIDTH / 2 - 100, 150, 200, 45);
+        easyButton.setFocusable(false);
+        easyButton.addActionListener(e -> {
+            currentDifficulty = Difficulty.EASY;
+            aiPaddleSpeed = 2;
+            aiReactionTime = 0.8f;
+            showingDifficulty = false;
+            this.requestFocus();
+            repaint();
+        });
+        easyButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                hoverDescription = "The AI moves slowly and has long reaction times, letting you\n" +
+                                "anticipate and return the ball with ease. Ball speed is standard.";
+                repaint();
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                hoverDescription = "";
+                repaint();
+            }
+        });
+        add(easyButton);
+        
+        // Medium button
+        mediumButton = new ModernButton("Medium");
+        mediumButton.setBounds(PongGame.WIDTH / 2 - 100, 210, 200, 45);
+        mediumButton.setFocusable(false);
+        mediumButton.addActionListener(e -> {
+            currentDifficulty = Difficulty.MEDIUM;
+            aiPaddleSpeed = 4;
+            aiReactionTime = 0.5f;
+            showingDifficulty = false;
+            this.requestFocus();
+            repaint();
+        });
+        mediumButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                hoverDescription = "The AI has improved accuracy and shorter reaction times,\n" +
+                                "offering a balanced challenge without increasing ball speed.";
+                repaint();
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                hoverDescription = "";
+                repaint();
+            }
+        });
+        add(mediumButton);
+        
+        // Hard button
+        hardButton = new ModernButton("Hard");
+        hardButton.setBounds(PongGame.WIDTH / 2 - 100, 270, 200, 45);
+        hardButton.setFocusable(false);
+        hardButton.addActionListener(e -> {
+            currentDifficulty = Difficulty.HARD;
+            aiPaddleSpeed = 5;
+            aiReactionTime = 0.2f;
+            showingDifficulty = false;
+            this.requestFocus();
+            repaint();
+        });
+        hardButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                hoverDescription = "The AI anticipates your shots better and moves with great agility;\n" +
+                                "additionally, the ball travels slightly faster to amp up the intensity.";
+                repaint();
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                hoverDescription = "";
+                repaint();
+            }
+        });
+        add(hardButton);
+        
+        // Back button for difficulty screen
+        backButton = new ModernButton("Back");
+        backButton.setBounds(PongGame.WIDTH / 2 - 100, 380, 200, 45);
+        backButton.setFocusable(false);
+        backButton.addActionListener(e -> {
+            showingDifficulty = false;
+            this.requestFocus();
+            repaint();
+        });
+        add(backButton);
     }
     
     @Override
@@ -109,16 +230,34 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         super.paintComponent(g);
         draw(g);
         
-        // Show/hide buttons based on game state and instructions visibility
-        boolean showMainButtons = (!gameRunning || gameOver) && !showingInstructions;
+        // Show/hide buttons based on game state and menu visibility
+        boolean showMainButtons = (!gameRunning || gameOver) && !showingInstructions && !showingDifficulty;
         startButton.setVisible(showMainButtons);
         howToPlayButton.setVisible(showMainButtons);
-        closeInstructionsButton.setVisible(showingInstructions);
+        difficultyButton.setVisible(showMainButtons);
         
-        // Draw instructions overlay if needed
-            if (showingInstructions) {
-                drawInstructions(g);
-            }
+        // Instructions and close button
+        closeInstructionsButton.setVisible(showingInstructions || showingDifficulty);
+        
+        // Difficulty buttons
+        easyButton.setVisible(showingDifficulty);
+        mediumButton.setVisible(showingDifficulty);
+        hardButton.setVisible(showingDifficulty);
+        backButton.setVisible(showingDifficulty);
+        
+        // Change button text based on game state
+        if (gameOver) {
+            startButton.setText("Play Again?");
+        } else if (!gameRunning) {
+            startButton.setText("Start Game");
+        }
+        
+        // Draw overlays if needed
+        if (showingInstructions) {
+            drawInstructions(g);
+        } else if (showingDifficulty) {
+            drawDifficulty(g);
+        }
     }
     
     /**
@@ -159,8 +298,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.setFont(new Font("Arial", Font.BOLD, 30));
             g.drawString(winner + " Wins!", PongGame.WIDTH / 2 - 70, PongGame.HEIGHT / 2);
             
-            g.setFont(new Font("Arial", Font.PLAIN, 20));
-            g.drawString("Press SPACE to play again", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
+            // Only show keyboard instruction if buttons aren't visible
+            if (!startButton.isVisible()) {
+                g.setFont(new Font("Arial", Font.PLAIN, 20));
+                g.drawString("Press SPACE to play again", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
+            }
         }
         // Draw pause message if game is paused and not over
         else if (gamePaused && gameRunning) {
@@ -207,6 +349,43 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
     
     /**
+     * Draws the difficulty selection screen
+     */
+    private void drawDifficulty(Graphics g) {
+        // Draw semi-transparent background
+        g.setColor(new Color(0, 0, 0, 220));
+        g.fillRect(0, 0, PongGame.WIDTH, PongGame.HEIGHT);
+        
+        // Draw title
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 36));
+        g.drawString("Select Difficulty", PongGame.WIDTH / 2 - 140, 80);
+        
+        // Draw current difficulty
+        g.setFont(new Font("Arial", Font.PLAIN, 20));
+        g.drawString("Current: " + currentDifficulty.toString(), PongGame.WIDTH / 2 - 80, 120);
+        
+        // Draw hover description if any
+        if (!hoverDescription.isEmpty()) {
+            g.setFont(new Font("Arial", Font.PLAIN, 16));
+            drawMultiLineText(g, hoverDescription, PongGame.WIDTH / 2 - 220, 330);
+        }
+    }
+
+    /**
+     * Helper method to draw multi-line text
+     */
+    private void drawMultiLineText(Graphics g, String text, int x, int y) {
+        String[] lines = text.split("\n");
+        int lineHeight = g.getFontMetrics().getHeight();
+        
+        for (String line : lines) {
+            g.drawString(line, x, y);
+            y += lineHeight;
+        }
+    }
+
+    /**
      * Updates the game state for each frame
      */
     private void update() {
@@ -217,19 +396,17 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             
             // Only update AI, ball and check scoring if game is running AND not over
             if (gameRunning && !gameOver) {
-                // Simple AI for opponent paddle
-                int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
-                int ballCenterY = ball.getY() + ball.getHeight() / 2;
+                // AI paddle movement with difficulty-based behavior
+                updateAIPaddle();
                 
-                if (aiPaddleCenterY < ballCenterY) {
-                    aiPaddle.setYVelocity(PADDLE_SPEED - 2); // Slightly slower than player
-                } else if (aiPaddleCenterY > ballCenterY) {
-                    aiPaddle.setYVelocity(-(PADDLE_SPEED - 2)); // Slightly slower than player
+                // Update ball speed based on difficulty
+                if (currentDifficulty == Difficulty.HARD) {
+                    // Hard difficulty has slightly faster ball
+                    ball.setSpeedMultiplier(1.2f);
                 } else {
-                    aiPaddle.setYVelocity(0);
+                    // Normal ball speed for Easy and Medium
+                    ball.setSpeedMultiplier(1.0f);
                 }
-                
-                aiPaddle.update();
                 
                 // Update ball
                 ball.update();
@@ -246,6 +423,49 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 aiPaddle.update();
             }
         }
+    }
+
+    /**
+     * Updates AI paddle movement based on current difficulty
+     */
+    private void updateAIPaddle() {
+        int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
+        int ballCenterY = ball.getY() + ball.getHeight() / 2;
+        
+        // Add reaction delay based on difficulty
+        // For harder difficulties, AI predicts where the ball will be
+        int targetY = ballCenterY;
+        
+        if (currentDifficulty == Difficulty.HARD) {
+            // Hard difficulty: AI tries to predict ball trajectory
+            if (ball.getXVelocity() > 0) { // Ball moving toward AI
+                // Simple trajectory prediction
+                float ballDistanceToAI = aiPaddle.getX() - ball.getX();
+                float timeToReachAI = ballDistanceToAI / ball.getXVelocity();
+                int predictedY = (int) (ball.getY() + (ball.getYVelocity() * timeToReachAI));
+                
+                // Use prediction with some error margin
+                targetY = predictedY + (ball.getHeight() / 2);
+                
+                // Ensure prediction is within bounds
+                targetY = Math.max(targetY, 0);
+                targetY = Math.min(targetY, PongGame.HEIGHT - aiPaddle.getHeight());
+            }
+        }
+        
+        // Apply "reaction time" - make AI less perfect on easier difficulties
+        double reactionChance = Math.random();
+        if (reactionChance > aiReactionTime) {
+            if (aiPaddleCenterY < targetY) {
+                aiPaddle.setYVelocity(aiPaddleSpeed);
+            } else if (aiPaddleCenterY > targetY) {
+                aiPaddle.setYVelocity(-aiPaddleSpeed);
+            } else {
+                aiPaddle.setYVelocity(0);
+            }
+        }
+        
+        aiPaddle.update();
     }
     
     /**
