@@ -11,6 +11,10 @@ public class Ball {
     private int width, height;
     private int xVelocity, yVelocity;
     
+    // Maximum speed limits
+    private final int MAX_X_SPEED = 7;
+    private final int MAX_Y_SPEED = 5;
+    
     /**
      * Creates a new ball
      */
@@ -67,20 +71,23 @@ public class Ball {
     
     /**
      * Reverses the horizontal direction and slightly increases speed
+     * while respecting maximum speed limits
      */
     public void reverseXDirection() {
         xVelocity = -xVelocity;
+        
+        // Increase speed but respect the maximum limits
         if (xVelocity > 0) {
-            xVelocity++; // Speed up slightly
+            xVelocity = Math.min(xVelocity + 1, MAX_X_SPEED);
         } else {
-            xVelocity--; // Speed up slightly
+            xVelocity = Math.max(xVelocity - 1, -MAX_X_SPEED);
         }
         
-        // Also add a bit of randomness to y velocity
+        // Add a bit of randomness to y velocity but respect limits
         if (Math.random() > 0.5) {
-            yVelocity++;
+            yVelocity = Math.min(yVelocity + 1, MAX_Y_SPEED);
         } else {
-            yVelocity--;
+            yVelocity = Math.max(yVelocity - 1, -MAX_Y_SPEED);
         }
     }
     
