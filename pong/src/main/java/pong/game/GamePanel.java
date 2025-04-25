@@ -1,6 +1,5 @@
 package pong.game;
 
-import pong.game.ModernButton;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.Timer;
@@ -32,6 +31,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private int aiScore = 0;
     private boolean gameRunning = false;
     private boolean gamePaused = false;
+    private boolean gameOver = false;
+    private String winner = "";
+    private final int WINNING_SCORE = 10;
     
     // Timer for game loop
     private Timer gameTimer;
@@ -108,15 +110,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         draw(g);
         
         // Show/hide buttons based on game state and instructions visibility
-        boolean showMainButtons = !gameRunning && !showingInstructions;
+        boolean showMainButtons = (!gameRunning || gameOver) && !showingInstructions;
         startButton.setVisible(showMainButtons);
         howToPlayButton.setVisible(showMainButtons);
         closeInstructionsButton.setVisible(showingInstructions);
         
         // Draw instructions overlay if needed
-        if (showingInstructions) {
-            drawInstructions(g);
-        }
+            if (showingInstructions) {
+                drawInstructions(g);
+            }
     }
     
     /**
@@ -131,8 +133,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         playerPaddle.draw(g);
         aiPaddle.draw(g);
         
-        // Draw ball (only if game is running)
-        if (gameRunning) {
+        // Draw ball (only if game is running and not over)
+        if (gameRunning && !gameOver) {
             ball.draw(g);
         }
         
@@ -148,11 +150,20 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         g.drawString(String.valueOf(playerScore), PongGame.WIDTH / 2 - 50, 50);
         g.drawString(String.valueOf(aiScore), PongGame.WIDTH / 2 + 30, 50);
         
-        // We no longer show the W and S instruction text here
-        // It's now in the How To Play overlay
-        
-        // Draw pause message if game is paused
-        if (gamePaused && gameRunning) {
+        // Draw game over message
+        if (gameOver) {
+            g.setColor(new Color(255, 215, 0, 220)); // Semi-transparent gold
+            g.setFont(new Font("Arial", Font.BOLD, 50));
+            g.drawString("GAME OVER", PongGame.WIDTH / 2 - 150, PongGame.HEIGHT / 2 - 50);
+            
+            g.setFont(new Font("Arial", Font.BOLD, 30));
+            g.drawString(winner + " Wins!", PongGame.WIDTH / 2 - 70, PongGame.HEIGHT / 2);
+            
+            g.setFont(new Font("Arial", Font.PLAIN, 20));
+            g.drawString("Press SPACE to play again", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
+        }
+        // Draw pause message if game is paused and not over
+        else if (gamePaused && gameRunning) {
             g.setColor(new Color(255, 255, 255, 200)); // Semi-transparent white
             g.setFont(new Font("Arial", Font.BOLD, 50));
             g.drawString("PAUSED", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2);
@@ -204,7 +215,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             // Update paddle positions regardless of game state
             playerPaddle.update();
             
-            if (gameRunning) {
+            // Only update AI, ball and check scoring if game is running AND not over
+            if (gameRunning && !gameOver) {
                 // Simple AI for opponent paddle
                 int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
                 int ballCenterY = ball.getY() + ball.getHeight() / 2;
@@ -227,6 +239,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 
                 // Check for scoring
                 checkScoring();
+            }
+            // If game is over, make sure AI paddle stops moving
+            else if (gameOver) {
+                aiPaddle.setYVelocity(0);
+                aiPaddle.update();
             }
         }
     }
@@ -255,12 +272,24 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         if (ball.getX() + ball.getWidth() >= PongGame.WIDTH) {
             playerScore++;
             ball.reset();
+            
+            // Check for win condition
+            if (playerScore >= WINNING_SCORE) {
+                gameOver = true;
+                winner = "Player";
+            }
         }
         
         // AI scores (ball goes past player paddle)
         if (ball.getX() <= 0) {
             aiScore++;
             ball.reset();
+            
+            // Check for win condition
+            if (aiScore >= WINNING_SCORE) {
+                gameOver = true;
+                winner = "AI";
+            }
         }
     }
     
@@ -268,10 +297,20 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
      * Starts a new game
      */
     private void startGame() {
+        // Reset ball
         ball.reset();
+        
+        // Reset paddles to center positions
+        playerPaddle.reset();
+        aiPaddle.reset();
+        
+        // Reset game state
         playerScore = 0;
         aiScore = 0;
         gameRunning = true;
+        gameOver = false;
+        winner = "";
+        gamePaused = false;
     }
     
     @Override
@@ -284,15 +323,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         
-        if (key == KeyEvent.VK_W && !gamePaused) {
+        if (key == KeyEvent.VK_W && !gamePaused && !gameOver) {
             playerPaddle.setYVelocity(-PADDLE_SPEED);
         }
-        if (key == KeyEvent.VK_S && !gamePaused) {
+        if (key == KeyEvent.VK_S && !gamePaused && !gameOver) {
             playerPaddle.setYVelocity(PADDLE_SPEED);
         }
         
         if (key == KeyEvent.VK_SPACE) {
-            if (!gameRunning) {
+            if (gameOver || !gameRunning) {
                 startGame();
             } else {
                 // Toggle pause state

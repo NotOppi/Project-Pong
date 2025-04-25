@@ -1,7 +1,6 @@
 package pong.game;
 
 import javax.swing.JButton;
-import javax.swing.BorderFactory;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;

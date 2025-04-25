@@ -12,6 +12,7 @@ public class Paddle {
     private int width, height;
     private int yVelocity;
     private Color color;
+    private int initialY; // Store initial Y position for reset
     
     /**
      * Creates a new paddle
@@ -19,9 +20,19 @@ public class Paddle {
     public Paddle(int x, int y, int width, int height, Color color) {
         this.x = x;
         this.y = y;
+        this.initialY = y; // Store initial position
         this.width = width;
         this.height = height;
+        this.yVelocity = 0;
         this.color = color;
+    }
+    
+    /**
+     * Resets the paddle to its center starting position
+     */
+    public void reset() {
+        this.y = initialY;
+        this.yVelocity = 0;
     }
     
     /**
