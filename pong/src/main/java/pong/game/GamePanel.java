@@ -24,6 +24,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private JButton startButton;
     private JButton howToPlayButton;
     private JButton difficultyButton;
+    private JButton multiplayerButton;
     private JButton closeInstructionsButton;
     private JButton easyButton;
     private JButton mediumButton;
@@ -39,6 +40,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private boolean gameRunning = false;
     private boolean gamePaused = false;
     private boolean gameOver = false;
+    private boolean isMultiplayerMode = false;
     private String winner = "";
     private final int WINNING_SCORE = 10;
     
@@ -116,6 +118,17 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             repaint();
         });
         add(difficultyButton);
+        
+        // Multiplayer toggle button
+        multiplayerButton = new ModernButton("Single Player Mode");
+        multiplayerButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 195, 200, 45);
+        multiplayerButton.setFocusable(false);
+        multiplayerButton.addActionListener(e -> {
+            isMultiplayerMode = !isMultiplayerMode;
+            multiplayerButton.setText(isMultiplayerMode ? "Multiplayer Mode" : "Single Player Mode");
+            this.requestFocus();
+        });
+        add(multiplayerButton);
         
         // Close Instructions button
         closeInstructionsButton = new ModernButton("X", true);
@@ -235,6 +248,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         startButton.setVisible(showMainButtons);
         howToPlayButton.setVisible(showMainButtons);
         difficultyButton.setVisible(showMainButtons);
+        multiplayerButton.setVisible(showMainButtons);
         
         // Instructions and close button
         closeInstructionsButton.setVisible(showingInstructions || showingDifficulty);
@@ -283,11 +297,19 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.fillRect(PongGame.WIDTH / 2 - 1, i, 2, 25);
         }
         
-        // Draw scores
+        // Draw scores with appropriate labels
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 30));
-        g.drawString(String.valueOf(playerScore), PongGame.WIDTH / 2 - 50, 50);
-        g.drawString(String.valueOf(aiScore), PongGame.WIDTH / 2 + 30, 50);
+        
+        if (isMultiplayerMode) {
+            // In multiplayer mode, show P1 and P2 labels
+            g.drawString("P1: " + playerScore, PongGame.WIDTH / 2 - 80, 50);
+            g.drawString("P2: " + aiScore, PongGame.WIDTH / 2 + 20, 50);
+        } else {
+            // In single player mode, show just the scores
+            g.drawString(String.valueOf(playerScore), PongGame.WIDTH / 2 - 50, 50);
+            g.drawString(String.valueOf(aiScore), PongGame.WIDTH / 2 + 30, 50);
+        }
         
         // Draw game over message
         if (gameOver) {
@@ -312,6 +334,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.setFont(new Font("Arial", Font.PLAIN, 20));
             g.drawString("Press SPACE to continue", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
         }
+        
+        // Display game mode in corner
+        g.setFont(new Font("Arial", Font.PLAIN, 14));
+        g.setColor(Color.LIGHT_GRAY);
+        g.drawString(isMultiplayerMode ? "Multiplayer Mode" : "Single Player Mode", 10, PongGame.HEIGHT - 10);
     }
 
      /**
@@ -329,15 +356,31 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         
         // Draw instructions text
         g.setFont(new Font("Arial", Font.PLAIN, 20));
-        String[] instructions = {
-            "• Use W key to move paddle up",
-            "• Use S key to move paddle down",
-            "• Score points by getting the ball past the AI paddle",
-            "• The ball will bounce at different angles depending",
-            "  on where it hits your paddle",
-            "• Press SPACE to pause/resume the game",
-            "• First player to reach 10 points wins!"
-        };
+        String[] instructions;
+        
+        if (isMultiplayerMode) {
+            instructions = new String[] {
+                "• Player 1: Use W key to move paddle up",
+                "• Player 1: Use S key to move paddle down",
+                "• Player 2: Use UP ARROW to move paddle up", 
+                "• Player 2: Use DOWN ARROW to move paddle down",
+                "• Score points by getting the ball past the opponent's paddle",
+                "• The ball will bounce at different angles depending",
+                "  on where it hits your paddle",
+                "• Press SPACE to pause/resume the game",
+                "• First player to reach 10 points wins!"
+            };
+        } else {
+            instructions = new String[] {
+                "• Use W key to move paddle up",
+                "• Use S key to move paddle down",
+                "• Score points by getting the ball past the AI paddle",
+                "• The ball will bounce at different angles depending",
+                "  on where it hits your paddle",
+                "• Press SPACE to pause/resume the game",
+                "• First player to reach 10 points wins!"
+            };
+        }
         
         int yPos = 150;
         for (String line : instructions) {
@@ -370,6 +413,14 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.setFont(new Font("Arial", Font.PLAIN, 16));
             drawMultiLineText(g, hoverDescription, PongGame.WIDTH / 2 - 220, 330);
         }
+        
+        // Show note that difficulty only applies to single player
+        if (isMultiplayerMode) {
+            g.setFont(new Font("Arial", Font.ITALIC, 16));
+            g.setColor(Color.YELLOW);
+            g.drawString("Note: Difficulty settings only apply in single player mode", 
+                         PongGame.WIDTH / 2 - 220, 430);
+        }
     }
 
     /**
@@ -396,15 +447,21 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             
             // Only update AI, ball and check scoring if game is running AND not over
             if (gameRunning && !gameOver) {
-                // AI paddle movement with difficulty-based behavior
-                updateAIPaddle();
+                // In multiplayer mode, don't apply AI logic - the second paddle is controlled by arrow keys
+                if (!isMultiplayerMode) {
+                    // AI paddle movement with difficulty-based behavior
+                    updateAIPaddle();
+                } else {
+                    // Just update the position of the "AI" paddle in multiplayer mode
+                    aiPaddle.update();
+                }
                 
                 // Update ball speed based on difficulty
-                if (currentDifficulty == Difficulty.HARD) {
-                    // Hard difficulty has slightly faster ball
+                if (currentDifficulty == Difficulty.HARD && !isMultiplayerMode) {
+                    // Hard difficulty has slightly faster ball (only in single player)
                     ball.setSpeedMultiplier(1.2f);
                 } else {
-                    // Normal ball speed for Easy and Medium
+                    // Normal ball speed for Easy, Medium, and multiplayer
                     ball.setSpeedMultiplier(1.0f);
                 }
                 
@@ -496,7 +553,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             // Check for win condition
             if (playerScore >= WINNING_SCORE) {
                 gameOver = true;
-                winner = "Player";
+                winner = isMultiplayerMode ? "Player 1" : "Player";
             }
         }
         
@@ -508,7 +565,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             // Check for win condition
             if (aiScore >= WINNING_SCORE) {
                 gameOver = true;
-                winner = "AI";
+                winner = isMultiplayerMode ? "Player 2" : "AI";
             }
         }
     }
@@ -550,6 +607,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             playerPaddle.setYVelocity(PADDLE_SPEED);
         }
         
+        // Player 2 controls in multiplayer mode
+        if (isMultiplayerMode && !gamePaused && !gameOver) {
+            if (key == KeyEvent.VK_UP) {
+                aiPaddle.setYVelocity(-PADDLE_SPEED);
+            }
+            if (key == KeyEvent.VK_DOWN) {
+                aiPaddle.setYVelocity(PADDLE_SPEED);
+            }
+        }
+        
         if (key == KeyEvent.VK_SPACE) {
             if (gameOver || !gameRunning) {
                 startGame();
@@ -566,6 +633,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         
         if (key == KeyEvent.VK_W || key == KeyEvent.VK_S) {
             playerPaddle.setYVelocity(0);
+        }
+        
+        // Player 2 key releases in multiplayer mode
+        if (isMultiplayerMode) {
+            if (key == KeyEvent.VK_UP || key == KeyEvent.VK_DOWN) {
+                aiPaddle.setYVelocity(0);
+            }
         }
     }
     
