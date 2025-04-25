@@ -1,5 +1,6 @@
 package pong.game;
 
+import pong.game.ModernButton;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.Timer;
@@ -67,8 +68,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
      */
     private void initializeUI() {
         // Start Game button
-        startButton = new JButton("Start Game");
-        startButton.setBounds(PongGame.WIDTH / 2 - 75, PongGame.HEIGHT / 2 + 30, 150, 40);
+        startButton = new ModernButton("Start Game");
+        startButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 30, 200, 45);
         startButton.setFocusable(false); // Don't steal keyboard focus
         startButton.addActionListener(e -> {
             startGame();
@@ -77,19 +78,20 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         add(startButton);
         
         // How To Play button
-        howToPlayButton = new JButton("How To Play");
-        howToPlayButton.setBounds(PongGame.WIDTH / 2 - 75, PongGame.HEIGHT / 2 + 80, 150, 40);
+        howToPlayButton = new ModernButton("How To Play");
+        howToPlayButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 85, 200, 45);
         howToPlayButton.setFocusable(false);
         howToPlayButton.addActionListener(e -> {
             showingInstructions = true;
             this.requestFocus();
             repaint();
+            closeInstructionsButton.setVisible(true);
         });
         add(howToPlayButton);
         
         // Close Instructions button (X button)
-        closeInstructionsButton = new JButton("X");
-        closeInstructionsButton.setBounds(PongGame.WIDTH - 70, 20, 50, 30);
+        closeInstructionsButton = new ModernButton("X", true);
+        closeInstructionsButton.setBounds(PongGame.WIDTH - 60, 20, 40, 40);
         closeInstructionsButton.setFocusable(false);
         closeInstructionsButton.addActionListener(e -> {
             showingInstructions = false;
