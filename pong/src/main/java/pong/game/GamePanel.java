@@ -23,6 +23,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private int playerScore = 0;
     private int aiScore = 0;
     private boolean gameRunning = false;
+    private boolean gamePaused = false;
     
     // Timer for game loop
     private Timer gameTimer;
@@ -91,38 +92,50 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.drawString("Press SPACE to start", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 - 50);
             g.drawString("Use W and S to move", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2);
         }
+        
+        // Draw pause message if game is paused
+        if (gamePaused && gameRunning) {
+            g.setColor(new Color(255, 255, 255, 200)); // Semi-transparent white
+            g.setFont(new Font("Arial", Font.BOLD, 50));
+            g.drawString("PAUSED", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2);
+            g.setFont(new Font("Arial", Font.PLAIN, 20));
+            g.drawString("Press SPACE to continue", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
+        }
     }
     
     /**
      * Updates the game state for each frame
      */
     private void update() {
-        // Update paddle positions regardless of game state
-        playerPaddle.update();
-        
-        if (gameRunning) {
-            // Simple AI for opponent paddle
-            int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
-            int ballCenterY = ball.getY() + ball.getHeight() / 2;
+        // Only allow paddle movement when game is not paused
+        if (!gamePaused) {
+            // Update paddle positions regardless of game state
+            playerPaddle.update();
             
-            if (aiPaddleCenterY < ballCenterY) {
-                aiPaddle.setYVelocity(PADDLE_SPEED - 2); // Slightly slower than player
-            } else if (aiPaddleCenterY > ballCenterY) {
-                aiPaddle.setYVelocity(-(PADDLE_SPEED - 2)); // Slightly slower than player
-            } else {
-                aiPaddle.setYVelocity(0);
+            if (gameRunning) {
+                // Simple AI for opponent paddle
+                int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
+                int ballCenterY = ball.getY() + ball.getHeight() / 2;
+                
+                if (aiPaddleCenterY < ballCenterY) {
+                    aiPaddle.setYVelocity(PADDLE_SPEED - 2); // Slightly slower than player
+                } else if (aiPaddleCenterY > ballCenterY) {
+                    aiPaddle.setYVelocity(-(PADDLE_SPEED - 2)); // Slightly slower than player
+                } else {
+                    aiPaddle.setYVelocity(0);
+                }
+                
+                aiPaddle.update();
+                
+                // Update ball
+                ball.update();
+                
+                // Check collisions
+                checkCollision();
+                
+                // Check for scoring
+                checkScoring();
             }
-            
-            aiPaddle.update();
-            
-            // Update ball
-            ball.update();
-            
-            // Check collisions
-            checkCollision();
-            
-            // Check for scoring
-            checkScoring();
         }
     }
     
@@ -177,16 +190,19 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         
-        if (key == KeyEvent.VK_W) {
+        if (key == KeyEvent.VK_W && !gamePaused) {
             playerPaddle.setYVelocity(-PADDLE_SPEED);
         }
-        if (key == KeyEvent.VK_S) {
+        if (key == KeyEvent.VK_S && !gamePaused) {
             playerPaddle.setYVelocity(PADDLE_SPEED);
         }
         
         if (key == KeyEvent.VK_SPACE) {
             if (!gameRunning) {
                 startGame();
+            } else {
+                // Toggle pause state
+                gamePaused = !gamePaused;
             }
         }
     }
