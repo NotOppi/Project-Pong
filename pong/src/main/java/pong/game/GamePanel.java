@@ -10,6 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Panel that contains the actual game elements and logic.
@@ -25,6 +27,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private JButton howToPlayButton;
     private JButton difficultyButton;
     private JButton multiplayerButton;
+    private JButton themeButton;
     private JButton closeInstructionsButton;
     private JButton easyButton;
     private JButton mediumButton;
@@ -32,6 +35,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private JButton backButton;
     private boolean showingInstructions = false;
     private boolean showingDifficulty = false;
+    private boolean showingThemes = false;
     private String hoverDescription = "";
     
     // Game state
@@ -50,10 +54,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private int aiPaddleSpeed = 4; // Default for MEDIUM
     private float aiReactionTime = 0.5f; // Default for MEDIUM
     
+    // Theme settings
+    private Theme currentTheme = Theme.CLASSIC;
+    private JButton[] themeButtons;
+    
     // Timer for game loop
     private Timer gameTimer;
     private final int DELAY = 10;
     private final int PADDLE_SPEED = 6;
+
+    private Map<JButton, Integer> originalButtonPositions;
     
     /**
      * Creates and initializes the game panel
@@ -70,10 +80,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         // Initialize game objects
         int paddleHeight = 80;
         playerPaddle = new Paddle(30, PongGame.HEIGHT / 2 - paddleHeight / 2, 
-                                  15, paddleHeight, Color.WHITE);
+                                  15, paddleHeight, currentTheme.getPaddleColor());
         aiPaddle = new Paddle(PongGame.WIDTH - 45, PongGame.HEIGHT / 2 - paddleHeight / 2, 
-                             15, paddleHeight, Color.WHITE);
+                             15, paddleHeight, currentTheme.getPaddleColor());
         ball = new Ball(PongGame.WIDTH / 2, PongGame.HEIGHT / 2, 15);
+        ball.setColor(currentTheme.getBallColor());
         
         // Set up game timer
         gameTimer = new Timer(DELAY, this);
@@ -84,67 +95,105 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
      * Initializes UI components
      */
     private void initializeUI() {
-        // Start Game button
-        startButton = new ModernButton("Start Game");
-        startButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 30, 200, 45);
-        startButton.setFocusable(false);
-        startButton.addActionListener(e -> {
-            startGame();
-            this.requestFocus();
-        });
-        add(startButton);
-        
-        // How To Play button
-        howToPlayButton = new ModernButton("How To Play");
-        howToPlayButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 85, 200, 45);
-        howToPlayButton.setFocusable(false);
-        howToPlayButton.addActionListener(e -> {
-            showingInstructions = true;
-            showingDifficulty = false;
-            this.requestFocus();
-            repaint();
-            closeInstructionsButton.setVisible(true);
-        });
-        add(howToPlayButton);
-        
-        // Difficulty button
-        difficultyButton = new ModernButton("Difficulty Level");
-        difficultyButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 140, 200, 45);
-        difficultyButton.setFocusable(false);
-        difficultyButton.addActionListener(e -> {
-            showingDifficulty = true;
-            showingInstructions = false;
-            this.requestFocus();
-            repaint();
-        });
-        add(difficultyButton);
-        
-        // Multiplayer toggle button
-        multiplayerButton = new ModernButton("Single Player Mode");
-        multiplayerButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 195, 200, 45);
-        multiplayerButton.setFocusable(false);
-        multiplayerButton.addActionListener(e -> {
-            isMultiplayerMode = !isMultiplayerMode;
-            multiplayerButton.setText(isMultiplayerMode ? "Multiplayer Mode" : "Single Player Mode");
-            this.requestFocus();
-        });
-        add(multiplayerButton);
-        
-        // Close Instructions button
-        closeInstructionsButton = new ModernButton("X", true);
-        closeInstructionsButton.setBounds(PongGame.WIDTH - 60, 20, 40, 40);
-        closeInstructionsButton.setFocusable(false);
-        closeInstructionsButton.addActionListener(e -> {
-            showingInstructions = false;
-            showingDifficulty = false;
-            this.requestFocus();
-            repaint();
-        });
-        closeInstructionsButton.setVisible(false);
-        add(closeInstructionsButton);
-        
-        // Initialize difficulty selection buttons
-        initializeDifficultyButtons();
+    // Calculate vertical centering
+    int buttonHeight = 45;
+    int buttonSpacing = 10;
+    int totalButtonCount = 5; // Start, HowToPlay, Difficulty, Multiplayer, Theme
+    int totalButtonsHeight = (buttonHeight * totalButtonCount) + (buttonSpacing * (totalButtonCount - 1));
+    int startY = (PongGame.HEIGHT - totalButtonsHeight) / 2;
+    
+    // Start Game button
+    startButton = new ModernButton("Start Game");
+    startButton.setBounds(PongGame.WIDTH / 2 - 100, startY, 200, buttonHeight);
+    startButton.setFocusable(false);
+    startButton.addActionListener(e -> {
+        startGame();
+        this.requestFocus();
+    });
+    add(startButton);
+    
+    // How To Play button
+    howToPlayButton = new ModernButton("How To Play");
+    howToPlayButton.setBounds(PongGame.WIDTH / 2 - 100, startY + buttonHeight + buttonSpacing, 200, buttonHeight);
+    howToPlayButton.setFocusable(false);
+    howToPlayButton.addActionListener(e -> {
+        showingInstructions = true;
+        showingDifficulty = false;
+        showingThemes = false;
+        this.requestFocus();
+        repaint();
+        closeInstructionsButton.setVisible(true);
+    });
+    add(howToPlayButton);
+    
+    // Difficulty button
+    difficultyButton = new ModernButton("Difficulty Level");
+    difficultyButton.setBounds(PongGame.WIDTH / 2 - 100, startY + (buttonHeight + buttonSpacing) * 2, 200, buttonHeight);
+    difficultyButton.setFocusable(false);
+    difficultyButton.addActionListener(e -> {
+        showingDifficulty = true;
+        showingInstructions = false;
+        showingThemes = false;
+        this.requestFocus();
+        repaint();
+    });
+    add(difficultyButton);
+    
+    // Multiplayer toggle button
+    multiplayerButton = new ModernButton("Single Player");
+    multiplayerButton.setBounds(PongGame.WIDTH / 2 - 100, startY + (buttonHeight + buttonSpacing) * 3, 200, buttonHeight);
+    multiplayerButton.setFocusable(false);
+    multiplayerButton.addActionListener(e -> {
+        isMultiplayerMode = !isMultiplayerMode;
+        multiplayerButton.setText(isMultiplayerMode ? "Multiplayer Mode" : "Single Player");
+        this.requestFocus();
+    });
+    add(multiplayerButton);
+    
+    // Theme button
+    themeButton = new ModernButton("Change Theme");
+    themeButton.setBounds(PongGame.WIDTH / 2 - 100, startY + (buttonHeight + buttonSpacing) * 4, 200, buttonHeight);
+    themeButton.setFocusable(false);
+    themeButton.addActionListener(e -> {
+        showingThemes = true;
+        showingInstructions = false;
+        showingDifficulty = false;
+        this.requestFocus();
+        repaint();
+        closeInstructionsButton.setVisible(true);
+    });
+    add(themeButton);
+    
+    // Close Instructions button
+    closeInstructionsButton = new ModernButton("X", true);
+    closeInstructionsButton.setBounds(PongGame.WIDTH - 60, 20, 40, 40);
+    closeInstructionsButton.setFocusable(false);
+    closeInstructionsButton.addActionListener(e -> {
+        showingInstructions = false;
+        showingDifficulty = false;
+        showingThemes = false;
+        this.requestFocus();
+        repaint();
+    });
+    closeInstructionsButton.setVisible(false);
+    add(closeInstructionsButton);
+    
+    // Initialize difficulty selection buttons
+    initializeDifficultyButtons();
+    
+    // Initialize theme selection buttons
+    initializeThemeButtons();
+    
+    // Apply initial theme to all buttons
+    applyThemeToButtons(currentTheme);
+    
+    // Store the original button positions for game over screen
+    originalButtonPositions = new HashMap<>();
+    originalButtonPositions.put(startButton, startButton.getY());
+    originalButtonPositions.put(howToPlayButton, howToPlayButton.getY());
+    originalButtonPositions.put(difficultyButton, difficultyButton.getY());
+    originalButtonPositions.put(multiplayerButton, multiplayerButton.getY());
+    originalButtonPositions.put(themeButton, themeButton.getY());
     }
 
     /**
@@ -238,26 +287,130 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         add(backButton);
     }
     
+    /**
+     * Initializes theme selection buttons
+     */
+    private void initializeThemeButtons() {
+        themeButtons = new JButton[Theme.AVAILABLE_THEMES.length];
+        
+        for (int i = 0; i < Theme.AVAILABLE_THEMES.length; i++) {
+            Theme theme = Theme.AVAILABLE_THEMES[i];
+            themeButtons[i] = new ModernButton(theme.getName());
+            themeButtons[i].setBounds(PongGame.WIDTH / 2 - 100, 150 + (i * 60), 200, 45);
+            themeButtons[i].setFocusable(false);
+            
+            // Store the theme index for the action listener
+            final int themeIndex = i;
+            themeButtons[i].addActionListener(e -> {
+                currentTheme = Theme.AVAILABLE_THEMES[themeIndex];
+                applyTheme(currentTheme);
+                showingThemes = false;
+                this.requestFocus();
+                repaint();
+            });
+            
+            themeButtons[i].addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    hoverDescription = "Theme: " + theme.getName() + "\n" +
+                                    "Changes the colors of the game elements.";
+                    repaint();
+                }
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    hoverDescription = "";
+                    repaint();
+                }
+            });
+            
+            add(themeButtons[i]);
+        }
+    }
+    
+    /**
+     * Applies the selected theme to the game elements
+     * @param theme the theme to apply
+     */
+    private void applyTheme(Theme theme) {
+        // Apply theme to background
+        setBackground(theme.getBackgroundColor());
+        
+        // Apply theme to game objects
+        playerPaddle.setColor(theme.getPaddleColor());
+        aiPaddle.setColor(theme.getPaddleColor());
+        ball.setColor(theme.getBallColor());
+        
+        // Apply theme to buttons
+        applyThemeToButtons(theme);
+        
+        // Store the current theme
+        currentTheme = theme;
+    }
+    
+    /**
+     * Applies theme to all buttons
+     * @param theme the theme to apply
+     */
+    private void applyThemeToButtons(Theme theme) {
+        // Apply theme to ModernButtons
+        ModernButton[] buttons = {
+            (ModernButton)startButton, (ModernButton)howToPlayButton, 
+            (ModernButton)difficultyButton, (ModernButton)multiplayerButton,
+            (ModernButton)themeButton, (ModernButton)closeInstructionsButton,
+            (ModernButton)easyButton, (ModernButton)mediumButton,
+            (ModernButton)hardButton, (ModernButton)backButton
+        };
+        
+        for (ModernButton button : buttons) {
+            if (button != null) {
+                button.applyTheme(theme);
+            }
+        }
+        
+        // Apply theme to theme selection buttons if initialized
+        if (themeButtons != null) {
+            for (JButton button : themeButtons) {
+                if (button != null && button instanceof ModernButton) {
+                    ((ModernButton)button).applyTheme(theme);
+                }
+            }
+        }
+    }
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         draw(g);
         
         // Show/hide buttons based on game state and menu visibility
-        boolean showMainButtons = (!gameRunning || gameOver) && !showingInstructions && !showingDifficulty;
+        boolean showMainButtons = (!gameRunning || gameOver) && !showingInstructions && 
+                                !showingDifficulty && !showingThemes;
         startButton.setVisible(showMainButtons);
         howToPlayButton.setVisible(showMainButtons);
         difficultyButton.setVisible(showMainButtons);
         multiplayerButton.setVisible(showMainButtons);
+        themeButton.setVisible(showMainButtons);
+        
+        // If game over, reposition buttons to their original positions
+        if (gameOver && showMainButtons) {
+            repositionButtonsForGameOver();
+        }
         
         // Instructions and close button
-        closeInstructionsButton.setVisible(showingInstructions || showingDifficulty);
+        closeInstructionsButton.setVisible(showingInstructions || showingDifficulty || showingThemes);
         
         // Difficulty buttons
         easyButton.setVisible(showingDifficulty);
         mediumButton.setVisible(showingDifficulty);
         hardButton.setVisible(showingDifficulty);
         backButton.setVisible(showingDifficulty);
+        
+        // Theme buttons
+        if (themeButtons != null) {
+            for (JButton button : themeButtons) {
+                if (button != null) {
+                    button.setVisible(showingThemes);
+                }
+            }
+        }
         
         // Change button text based on game state
         if (gameOver) {
@@ -271,15 +424,31 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             drawInstructions(g);
         } else if (showingDifficulty) {
             drawDifficulty(g);
+        } else if (showingThemes) {
+            drawThemes(g);
         }
+    }
+
+    /**
+     * Repositions buttons for game over screen to fixed positions
+     */
+    private void repositionButtonsForGameOver() {
+        int gameOverY = PongGame.HEIGHT / 2 + 30;
+        int spacing = 55;
+        
+        startButton.setBounds(startButton.getX(), gameOverY, startButton.getWidth(), startButton.getHeight());
+        howToPlayButton.setBounds(howToPlayButton.getX(), gameOverY + spacing, howToPlayButton.getWidth(), howToPlayButton.getHeight());
+        difficultyButton.setBounds(difficultyButton.getX(), gameOverY + spacing * 2, difficultyButton.getWidth(), difficultyButton.getHeight());
+        multiplayerButton.setBounds(multiplayerButton.getX(), gameOverY + spacing * 3, multiplayerButton.getWidth(), multiplayerButton.getHeight());
+        themeButton.setBounds(themeButton.getX(), gameOverY + spacing * 4, themeButton.getWidth(), themeButton.getHeight());
     }
     
     /**
      * Draws all game elements on the screen
      */
     private void draw(Graphics g) {
-        // Draw background
-        g.setColor(Color.BLACK);
+        // Draw background (using current theme)
+        g.setColor(currentTheme.getBackgroundColor());
         g.fillRect(0, 0, PongGame.WIDTH, PongGame.HEIGHT);
         
         // Draw paddles
@@ -292,13 +461,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
         
         // Draw center dividing line
-        g.setColor(Color.WHITE);
+        g.setColor(currentTheme.getDividerColor());
         for (int i = 0; i < PongGame.HEIGHT; i += 50) {
             g.fillRect(PongGame.WIDTH / 2 - 1, i, 2, 25);
         }
         
         // Draw scores with appropriate labels
-        g.setColor(Color.WHITE);
+        g.setColor(currentTheme.getTextColor());
         g.setFont(new Font("Arial", Font.BOLD, 30));
         
         if (isMultiplayerMode) {
@@ -335,10 +504,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.drawString("Press SPACE to continue", PongGame.WIDTH / 2 - 110, PongGame.HEIGHT / 2 + 40);
         }
         
-        // Display game mode in corner
+        // Display game mode and theme in corner
         g.setFont(new Font("Arial", Font.PLAIN, 14));
-        g.setColor(Color.LIGHT_GRAY);
-        g.drawString(isMultiplayerMode ? "Multiplayer Mode" : "Single Player Mode", 10, PongGame.HEIGHT - 10);
+        g.setColor(currentTheme.getTextColor());
+        g.drawString(isMultiplayerMode ? "Multiplayer Mode" : "Single Player", 10, PongGame.HEIGHT - 25);
+        g.drawString("Theme: " + currentTheme.getName(), 10, PongGame.HEIGHT - 10);
     }
 
      /**
@@ -346,11 +516,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
      */
     private void drawInstructions(Graphics g) {
         // Draw semi-transparent background
-        g.setColor(new Color(0, 0, 0, 220)); // Almost black, semi-transparent
+        g.setColor(currentTheme.getPanelOverlayColor());
         g.fillRect(0, 0, PongGame.WIDTH, PongGame.HEIGHT);
         
         // Draw instructions title
-        g.setColor(Color.WHITE);
+        g.setColor(currentTheme.getTextColor());
         g.setFont(new Font("Arial", Font.BOLD, 36));
         g.drawString("How To Play", PongGame.WIDTH / 2 - 120, 80);
         
@@ -396,11 +566,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
      */
     private void drawDifficulty(Graphics g) {
         // Draw semi-transparent background
-        g.setColor(new Color(0, 0, 0, 220));
+        g.setColor(currentTheme.getPanelOverlayColor());
         g.fillRect(0, 0, PongGame.WIDTH, PongGame.HEIGHT);
         
         // Draw title
-        g.setColor(Color.WHITE);
+        g.setColor(currentTheme.getTextColor());
         g.setFont(new Font("Arial", Font.BOLD, 36));
         g.drawString("Select Difficulty", PongGame.WIDTH / 2 - 140, 80);
         
@@ -420,6 +590,30 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.setColor(Color.YELLOW);
             g.drawString("Note: Difficulty settings only apply in single player mode", 
                          PongGame.WIDTH / 2 - 220, 430);
+        }
+    }
+    
+    /**
+     * Draws the theme selection screen
+     */
+    private void drawThemes(Graphics g) {
+        // Draw semi-transparent background
+        g.setColor(currentTheme.getPanelOverlayColor());
+        g.fillRect(0, 0, PongGame.WIDTH, PongGame.HEIGHT);
+        
+        // Draw title
+        g.setColor(currentTheme.getTextColor());
+        g.setFont(new Font("Arial", Font.BOLD, 36));
+        g.drawString("Select Theme", PongGame.WIDTH / 2 - 120, 80);
+        
+        // Draw current theme
+        g.setFont(new Font("Arial", Font.PLAIN, 20));
+        g.drawString("Current: " + currentTheme.getName(), PongGame.WIDTH / 2 - 80, 120);
+        
+        // Draw hover description if any
+        if (!hoverDescription.isEmpty()) {
+            g.setFont(new Font("Arial", Font.PLAIN, 16));
+            drawMultiLineText(g, hoverDescription, PongGame.WIDTH / 2 - 150, 380);
         }
     }
 
@@ -457,12 +651,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 }
                 
                 // Update ball speed based on difficulty
+                // Update ball speed based on difficulty
                 if (currentDifficulty == Difficulty.HARD && !isMultiplayerMode) {
-                    // Hard difficulty has slightly faster ball (only in single player)
-                    ball.setSpeedMultiplier(1.2f);
+                    // Hard difficulty has faster ball (only in single player)
+                    ball.setSpeedMultiplier(1.5f);  // Increased from 1.2f
+                } else if (currentDifficulty == Difficulty.MEDIUM && !isMultiplayerMode) {
+                    // Medium difficulty has slightly faster ball
+                    ball.setSpeedMultiplier(1.2f);  // Medium speed
                 } else {
-                    // Normal ball speed for Easy, Medium, and multiplayer
-                    ball.setSpeedMultiplier(1.0f);
+                    // Normal ball speed for Easy and multiplayer
+                    ball.setSpeedMultiplier(1.1f);  // Slightly faster than before
                 }
                 
                 // Update ball
@@ -486,8 +684,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
      * Updates AI paddle movement based on current difficulty
      */
     private void updateAIPaddle() {
-        int aiPaddleCenterY = aiPaddle.getY() + aiPaddle.getHeight() / 2;
-        int ballCenterY = ball.getY() + ball.getHeight() / 2;
+        // Cast to int to handle double return values
+        int aiPaddleCenterY = (int)(aiPaddle.getY() + aiPaddle.getHeight() / 2);
+        int ballCenterY = (int)(ball.getY() + ball.getHeight() / 2);
         
         // Add reaction delay based on difficulty
         // For harder difficulties, AI predicts where the ball will be
@@ -497,16 +696,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             // Hard difficulty: AI tries to predict ball trajectory
             if (ball.getXVelocity() > 0) { // Ball moving toward AI
                 // Simple trajectory prediction
-                float ballDistanceToAI = aiPaddle.getX() - ball.getX();
+                float ballDistanceToAI = (float)(aiPaddle.getX() - ball.getX());
                 float timeToReachAI = ballDistanceToAI / ball.getXVelocity();
-                int predictedY = (int) (ball.getY() + (ball.getYVelocity() * timeToReachAI));
+                int predictedY = (int)(ball.getY() + (ball.getYVelocity() * timeToReachAI));
                 
                 // Use prediction with some error margin
-                targetY = predictedY + (ball.getHeight() / 2);
+                targetY = predictedY + (int)(ball.getHeight() / 2);
                 
                 // Ensure prediction is within bounds
                 targetY = Math.max(targetY, 0);
-                targetY = Math.min(targetY, PongGame.HEIGHT - aiPaddle.getHeight());
+                targetY = Math.min(targetY, PongGame.HEIGHT - (int)aiPaddle.getHeight());
             }
         }
         

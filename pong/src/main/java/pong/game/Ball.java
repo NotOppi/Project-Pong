@@ -2,141 +2,134 @@ package pong.game;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 
 /**
- * Represents the ball in the game.
+ * Represents the ball in the pong game
  */
-public class Ball {
-    private int x, y;
-    private int width, height;
-    private int xVelocity, yVelocity;
+public class Ball extends Rectangle {
+    // Increase default velocity from 2.5f to 4.0f
+    private float xVelocity = 4.0f;  
+    private float yVelocity = 4.0f;
     private float speedMultiplier = 1.0f;
-    
-    // Maximum speed limits
-    private final int MAX_X_SPEED = 7;
-    private final int MAX_Y_SPEED = 5;
+    // Increase max speed to 15 to allow faster gameplay
+    private final float MAX_SPEED = 15.0f;
+    // Increase default speed from 2.5f to 4.0f
+    private final float DEFAULT_SPEED = 4.0f;
+    private Color color = Color.WHITE;
     
     /**
-     * Creates a new ball
+     * Creates a new ball at the specified position
      */
     public Ball(int x, int y, int size) {
-        this.x = x;
-        this.y = y;
-        this.width = size;
-        this.height = size;
-        resetVelocity();
+        super(x, y, size, size);
+        reset();
     }
     
     /**
-     * Updates the ball position
+     * Sets the ball color
+     * @param color the new color
      */
-    public void update() {
-        // Apply speed multiplier
-        x += xVelocity * speedMultiplier;
-        y += yVelocity * speedMultiplier;
-        
-        // Handle top and bottom bounds
-        if (y <= 0) {
-            y = 0;
-            yVelocity = -yVelocity;
-        } else if (y + height >= PongGame.HEIGHT) {
-            y = PongGame.HEIGHT - height;
-            yVelocity = -yVelocity;
-        }
+    public void setColor(Color color) {
+        this.color = color;
     }
     
     /**
      * Sets the ball speed multiplier
-     * @param multiplier value to multiply ball speed by
+     * @param multiplier the speed multiplier
      */
     public void setSpeedMultiplier(float multiplier) {
         this.speedMultiplier = multiplier;
     }
     
     /**
-     * Resets the ball to the center with a random direction
+     * Resets the ball to starting position and randomizes direction
      */
     public void reset() {
         x = PongGame.WIDTH / 2 - width / 2;
         y = PongGame.HEIGHT / 2 - height / 2;
-        resetVelocity();
+        
+        // Randomize initial direction
+        xVelocity = (Math.random() > 0.5 ? 1 : -1) * DEFAULT_SPEED;
+        yVelocity = (Math.random() > 0.5 ? 1 : -1) * DEFAULT_SPEED;
     }
     
     /**
-     * Sets a random initial velocity
+     * Updates the ball's position
      */
-    private void resetVelocity() {
-        // Give ball an initial velocity in a random direction
-        xVelocity = (Math.random() > 0.5) ? 3 : -3;
-        yVelocity = (Math.random() > 0.5) ? 3 : -3;
+    public void update() {
+        // Apply speed multiplier
+        float actualXVelocity = xVelocity * speedMultiplier;
+        float actualYVelocity = yVelocity * speedMultiplier;
+        
+        // Update position
+        x += (int)actualXVelocity;
+        y += (int)actualYVelocity;
+        
+        // Bounce off top and bottom walls
+        if (y <= 0) {
+            y = 0;
+            yVelocity = Math.abs(yVelocity);
+        }
+        if (y >= PongGame.HEIGHT - height) {
+            y = PongGame.HEIGHT - height;
+            yVelocity = -Math.abs(yVelocity);
+        }
     }
     
     /**
-     * Draws the ball on screen
-     */
-    public void draw(Graphics g) {
-        g.setColor(Color.WHITE);
-        g.fillOval(x, y, width, height);
-    }
-    
-    /**
-     * Handles ball deflection based on where it hit the paddle
-     * @param paddle The paddle that the ball collided with
+     * Deflects the ball from a paddle based on where it hit
+     * @param paddle the paddle that was hit
      */
     public void deflectFromPaddle(Paddle paddle) {
-        // Reverse X direction (basic bounce behavior)
+        // Reverse x direction
         xVelocity = -xVelocity;
         
-        // Increase speed but respect the maximum limits
-        if (xVelocity > 0) {
-            xVelocity = Math.min(xVelocity + 1, MAX_X_SPEED);
+        // Adjust angle based on where the ball hit the paddle
+        float relativeIntersectY = (paddle.y + (paddle.height / 2)) - (y + (height / 2));
+        float normalizedRelativeIntersectionY = relativeIntersectY / (paddle.height / 2);
+        float bounceAngle = normalizedRelativeIntersectionY * 0.75f; // 75% of max angle
+        
+        // Adjust y velocity based on where the ball hit the paddle
+        yVelocity = DEFAULT_SPEED * -bounceAngle;
+        
+        // Increase speed slightly on each hit, up to max speed
+        // Increased from 5% to 8% for faster acceleration
+        if (Math.abs(xVelocity) < MAX_SPEED) {
+            xVelocity *= 1.08f; // 8% speed increase (was 5%)
+        }
+        
+        // Prevent ball from getting stuck in paddle
+        if (paddle.x < PongGame.WIDTH / 2) {
+            // Left paddle
+            x = paddle.x + paddle.width;
         } else {
-            xVelocity = Math.max(xVelocity - 1, -MAX_X_SPEED);
-        }
-        
-        // Calculate relative hit position (-0.5 to 0.5, where 0 is center)
-        int paddleCenter = paddle.getY() + paddle.getHeight() / 2;
-        int ballCenter = this.y + this.height / 2;
-        float relativeIntersectY = (paddleCenter - ballCenter) / (float)(paddle.getHeight() / 2);
-        
-        // Clamp the value between -0.5 and 0.5
-        relativeIntersectY = Math.max(-0.5f, Math.min(0.5f, relativeIntersectY));
-        
-        // Calculate influence factor - how much the hit position affects direction
-        float hitInfluence = Math.abs(relativeIntersectY) * 1.5f + 0.25f; // Range: 0.25-1.0
-        
-        // Get the previous direction but limit its impact for center hits
-        int previousDirection = (yVelocity != 0) ? (yVelocity / Math.abs(yVelocity)) : 0;
-        int baseVelocity = previousDirection * Math.min(Math.abs(yVelocity), MAX_Y_SPEED/2);
-        
-        // Calculate new y velocity based on hit position
-        int hitPositionVelocity = (int)(-relativeIntersectY * MAX_Y_SPEED * 1.5);
-        
-        // Blend previous direction with hit position
-        yVelocity = (int)(hitPositionVelocity * hitInfluence + baseVelocity * (1-hitInfluence));
-        
-        // Add small random component to prevent straight horizontal movement
-        float centerProximity = 1.0f - Math.abs(relativeIntersectY * 2); // 1.0 at center, 0 at edges
-        if (centerProximity > 0.7f) { // Only add randomness for near-center hits
-            int randomComponent = (Math.random() > 0.5) ? 1 : -1; // Random direction
-            int randomMagnitude = 1 + (int)(Math.random() * 2); // Random value 1-2
-            yVelocity += randomComponent * randomMagnitude;
-        }
-        
-        // Ensure the Y velocity stays within limits
-        yVelocity = Math.max(-MAX_Y_SPEED, Math.min(MAX_Y_SPEED, yVelocity));
-        
-        // Ensure the ball always has some minimal vertical movement
-        if (Math.abs(yVelocity) < 1) {
-            yVelocity = (Math.random() > 0.5) ? 1 : -1;
+            // Right paddle
+            x = paddle.x - width;
         }
     }
     
-    // Getters
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
-    public int getXVelocity() { return xVelocity; }
-    public int getYVelocity() { return yVelocity; }
+    /**
+     * Get the current x velocity
+     * @return the ball's horizontal velocity
+     */
+    public float getXVelocity() {
+        return xVelocity;
+    }
+    
+    /**
+     * Get the current y velocity
+     * @return the ball's vertical velocity
+     */
+    public float getYVelocity() {
+        return yVelocity;
+    }
+    
+    /**
+     * Draws the ball
+     */
+    public void draw(Graphics g) {
+        g.setColor(color);
+        g.fillOval(x, y, width, height);
+    }
 }

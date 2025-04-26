@@ -8,59 +8,84 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.LinearGradientPaint;
-import java.awt.GradientPaint;
-import java.awt.Point;
 
 /**
- * A modern-looking button with hover effects for the Pong game.
+ * A custom styled button for the game UI
  */
 public class ModernButton extends JButton {
-    private boolean hover;
-    private boolean isCloseButton;
+    private boolean isRound = false;
+    private boolean isHovered = false;
+    private boolean isPressed = false;
+    private Color buttonColor = new Color(70, 130, 180); // Default Steel Blue
+    private Color textColor = Color.WHITE;
     
     /**
-     * Creates a new modern button
-     * @param text Text to display on button
+     * Creates a new modern style button
+     * @param text the button text
      */
     public ModernButton(String text) {
-        this(text, false);
+        super(text);
+        setupButton();
     }
     
     /**
-     * Creates a new modern button
-     * @param text Text to display on button
-     * @param isCloseButton Whether this is a close button (special styling)
+     * Creates a new modern style button
+     * @param text the button text
+     * @param round whether the button should be round
      */
-    public ModernButton(String text, boolean isCloseButton) {
+    public ModernButton(String text, boolean round) {
         super(text);
-        this.isCloseButton = isCloseButton;
-        
-        // Remove default button styling
-        setBorderPainted(false);
+        this.isRound = round;
+        setupButton();
+    }
+    
+    /**
+     * Sets up the button appearance and interaction
+     */
+    private void setupButton() {
         setFocusPainted(false);
+        setBorderPainted(false);
         setContentAreaFilled(false);
-        setOpaque(false);
+        setFont(new Font("Arial", Font.BOLD, 18));
+        setForeground(textColor);
         
-        // Set font
-        setFont(new Font("Arial", Font.BOLD, isCloseButton ? 16 : 14));
-        setForeground(Color.WHITE);
-        
-        // Add hover effect
+        // Mouse events to handle hover and press effects
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                hover = true;
+                isHovered = true;
                 repaint();
             }
             
             @Override
             public void mouseExited(MouseEvent e) {
-                hover = false;
+                isHovered = false;
+                repaint();
+            }
+            
+            @Override
+            public void mousePressed(MouseEvent e) {
+                isPressed = true;
+                repaint();
+            }
+            
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                isPressed = false;
                 repaint();
             }
         });
+    }
+    
+    /**
+     * Updates the button colors based on the current theme
+     * @param theme the theme to apply
+     */
+    public void applyTheme(Theme theme) {
+        buttonColor = theme.getButtonColor();
+        textColor = theme.getButtonTextColor();
+        setForeground(textColor);
+        repaint();
     }
     
     @Override
@@ -71,63 +96,33 @@ public class ModernButton extends JButton {
         int width = getWidth();
         int height = getHeight();
         
-        // Choose colors based on type and state
-        Color startColor, endColor, borderColor;
-        
-        if (isCloseButton) {
-            if (hover || getModel().isPressed()) {
-                startColor = new Color(220, 50, 50);
-                endColor = new Color(180, 30, 30);
-                borderColor = new Color(240, 80, 80);
-            } else {
-                startColor = new Color(180, 30, 30);
-                endColor = new Color(140, 20, 20);
-                borderColor = new Color(200, 50, 50);
-            }
-        } else {
-            if (hover) {
-                startColor = new Color(60, 170, 230);
-                endColor = new Color(30, 120, 190);
-                borderColor = new Color(100, 200, 255);
-            } else if (getModel().isPressed()) {
-                startColor = new Color(30, 120, 190);
-                endColor = new Color(20, 80, 140);
-                borderColor = new Color(70, 150, 200);
-            } else {
-                startColor = new Color(40, 130, 200);
-                endColor = new Color(20, 100, 170);
-                borderColor = new Color(70, 150, 200);
-            }
+        // Base color with hover and press effects
+        Color baseColor = buttonColor;
+        if (isPressed) {
+            baseColor = baseColor.darker();
+        } else if (isHovered) {
+            baseColor = baseColor.brighter();
         }
         
-        // Create gradient background
-        int radius = isCloseButton ? 8 : 12;
-        RoundRectangle2D roundedRect = new RoundRectangle2D.Float(0, 0, width - 1, height - 1, radius, radius);
-        
-        LinearGradientPaint gradient = new LinearGradientPaint(
-            new Point(0, 0),
-            new Point(0, height),
-            new float[]{0.0f, 1.0f},
-            new Color[]{startColor, endColor}
-        );
-        
-        g2d.setPaint(gradient);
-        g2d.fill(roundedRect);
+        // Draw button background
+        g2d.setColor(baseColor);
+        if (isRound) {
+            g2d.fillOval(0, 0, width, height);
+        } else {
+            g2d.fillRoundRect(0, 0, width, height, 15, 15);
+        }
         
         // Draw border
-        g2d.setColor(borderColor);
-        g2d.draw(roundedRect);
-        
-        // Add highlight effect on top
-        GradientPaint highlightGradient = new GradientPaint(
-            0, 0, new Color(255, 255, 255, 100),
-            0, height / 2, new Color(255, 255, 255, 0)
-        );
-        g2d.setPaint(highlightGradient);
-        g2d.fill(new RoundRectangle2D.Float(1, 1, width - 3, height / 3, radius, radius));
+        g2d.setColor(baseColor.darker());
+        if (isRound) {
+            g2d.drawOval(0, 0, width - 1, height - 1);
+        } else {
+            g2d.drawRoundRect(0, 0, width - 1, height - 1, 15, 15);
+        }
         
         g2d.dispose();
         
+        // Draw text
         super.paintComponent(g);
     }
 }

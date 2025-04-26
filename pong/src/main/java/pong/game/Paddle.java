@@ -2,83 +2,72 @@ package pong.game;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 
 /**
- * Represents a paddle in the game that can be controlled by a player or AI.
+ * Represents a paddle in the pong game
  */
-public class Paddle {
-    private int x, y;
-    private int width, height;
-    private int yVelocity;
-    private Color color;
-    private int initialY; // Store initial Y position for reset
+public class Paddle extends Rectangle {
+    private int yVelocity = 0;
+    private final int startX;
+    private final int startY;
+    private Color color = Color.WHITE;
     
     /**
-     * Creates a new paddle
+     * Creates a new paddle at the specified position
      */
     public Paddle(int x, int y, int width, int height, Color color) {
-        this.x = x;
-        this.y = y;
-        this.initialY = y; // Store initial position
-        this.width = width;
-        this.height = height;
-        this.yVelocity = 0;
+        super(x, y, width, height);
+        this.startX = x;
+        this.startY = y;
         this.color = color;
     }
     
     /**
-     * Resets the paddle to its center starting position
+     * Sets the paddle color
+     * @param color the new color
      */
-    public void reset() {
-        this.y = initialY;
-        this.yVelocity = 0;
+    public void setColor(Color color) {
+        this.color = color;
     }
     
     /**
-     * Updates the paddle position
-     */
-    public void update() {
-        y += yVelocity;
-        
-        // Keep paddle within screen bounds
-        if (y <= 0) {
-            y = 0;
-        } else if (y + height >= PongGame.HEIGHT) {
-            y = PongGame.HEIGHT - height;
-        }
-    }
-    
-    /**
-     * Draws the paddle on screen
-     */
-    public void draw(Graphics g) {
-        g.setColor(color);
-        g.fillRect(x, y, width, height);
-    }
-    
-    /**
-     * Checks if this paddle intersects with the given ball
-     * @param ball The ball to check collision with
-     * @return true if collision detected, false otherwise
-     */
-    public boolean intersects(Ball ball) {
-        // Create rectangle representations for collision detection
-        return ball.getX() < x + width &&
-               ball.getX() + ball.getWidth() > x &&
-               ball.getY() < y + height &&
-               ball.getY() + ball.getHeight() > y;
-    }
-    
-    /**
-     * Sets the paddle's vertical velocity
+     * Sets the paddle's vertical movement speed
+     * @param yVelocity the vertical velocity (-ve = up, +ve = down)
      */
     public void setYVelocity(int yVelocity) {
         this.yVelocity = yVelocity;
     }
     
-    // Getters
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
+    /**
+     * Resets the paddle to starting position
+     */
+    public void reset() {
+        x = startX;
+        y = startY;
+        yVelocity = 0;
+    }
+    
+    /**
+     * Updates the paddle's position
+     */
+    public void update() {
+        y += yVelocity;
+        
+        // Keep paddle within screen bounds
+        if (y < 0) {
+            y = 0;
+        }
+        if (y > PongGame.HEIGHT - height) {
+            y = PongGame.HEIGHT - height;
+        }
+    }
+    
+    /**
+     * Draws the paddle
+     */
+    public void draw(Graphics g) {
+        g.setColor(color);
+        g.fillRect(x, y, width, height);
+    }
 }
