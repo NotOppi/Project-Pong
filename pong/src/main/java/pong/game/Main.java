@@ -3,12 +3,12 @@ package pong.game;
 import javax.swing.SwingUtilities;
 
 /**
- * Main class that launches the Pong game.
+ * Clase principal que lanza el juego Pong.
  */
 public class Main {
     /**
-     * Entry point for the application
-     * @param args command line arguments (not used)
+     * Punto de entrada para la aplicación
+     * @param args argumentos de línea de comandos (no utilizados)
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new PongGame());

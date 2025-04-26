@@ -3,7 +3,7 @@ package pong.game;
 import java.awt.Color;
 
 /**
- * Represents a color theme for the game.
+ * Representa un tema de colores para el juego.
  */
 public class Theme {
     private final String name;
@@ -17,7 +17,16 @@ public class Theme {
     private final Color panelOverlayColor;
     
     /**
-     * Creates a new theme with the specified colors
+     * Crea un nuevo tema con los colores especificados
+     * @param name nombre del tema
+     * @param backgroundColor color de fondo
+     * @param paddleColor color de las paletas
+     * @param ballColor color de la pelota
+     * @param textColor color del texto
+     * @param dividerColor color del divisor
+     * @param buttonColor color de los botones
+     * @param buttonTextColor color del texto en los botones
+     * @param panelOverlayColor color del panel superpuesto
      */
     public Theme(String name, Color backgroundColor, Color paddleColor, 
                 Color ballColor, Color textColor, Color dividerColor,
@@ -33,7 +42,7 @@ public class Theme {
         this.panelOverlayColor = panelOverlayColor;
     }
     
-    // Getters
+    // Métodos getter
     public String getName() { return name; }
     public Color getBackgroundColor() { return backgroundColor; }
     public Color getPaddleColor() { return paddleColor; }
@@ -44,55 +53,55 @@ public class Theme {
     public Color getButtonTextColor() { return buttonTextColor; }
     public Color getPanelOverlayColor() { return panelOverlayColor; }
     
-    // Predefined themes
+    // Temas predefinidos
     public static final Theme CLASSIC = new Theme(
         "Classic",
-        Color.BLACK,              // Background
-        Color.WHITE,              // Paddles
-        Color.WHITE,              // Ball
-        Color.WHITE,              // Text
-        Color.WHITE,              // Divider
-        new Color(70, 130, 180),  // Button (Steel Blue)
-        Color.WHITE,              // Button Text
-        new Color(0, 0, 0, 220)   // Panel Overlay
+        Color.BLACK,              // Fondo
+        Color.WHITE,              // Paletas
+        Color.WHITE,              // Pelota
+        Color.WHITE,              // Texto
+        Color.WHITE,              // Divisor
+        new Color(70, 130, 180),  // Botón (Azul Acero)
+        Color.WHITE,              // Texto de botón
+        new Color(0, 0, 0, 220)   // Panel superpuesto
     );
     
     public static final Theme NEON = new Theme(
         "Neon",
-        Color.BLACK,              // Background
-        new Color(0, 255, 204),   // Paddles (Cyan)
-        new Color(255, 0, 128),   // Ball (Hot Pink)
-        new Color(255, 255, 0),   // Text (Yellow)
-        new Color(0, 255, 0),     // Divider (Green)
-        new Color(128, 0, 255),   // Button (Purple)
-        Color.WHITE,              // Button Text
-        new Color(0, 0, 40, 230)  // Panel Overlay
+        Color.BLACK,              // Fondo
+        new Color(0, 255, 204),   // Paletas (Cian)
+        new Color(255, 0, 128),   // Pelota (Rosa intenso)
+        new Color(255, 255, 0),   // Texto (Amarillo)
+        new Color(0, 255, 0),     // Divisor (Verde)
+        new Color(128, 0, 255),   // Botón (Púrpura)
+        Color.WHITE,              // Texto de botón
+        new Color(0, 0, 40, 230)  // Panel superpuesto
     );
     
     public static final Theme RETRO = new Theme(
         "Retro",
-        new Color(0, 51, 102),    // Background (Navy Blue)
-        new Color(255, 153, 51),  // Paddles (Orange)
-        new Color(255, 204, 0),   // Ball (Yellow)
-        new Color(255, 255, 204), // Text (Light Yellow)
-        new Color(204, 102, 0),   // Divider (Brown)
-        new Color(153, 76, 0),    // Button (Dark Brown)
-        new Color(255, 255, 204), // Button Text
-        new Color(0, 30, 60, 220) // Panel Overlay
+        new Color(0, 51, 102),    // Fondo (Azul marino)
+        new Color(255, 153, 51),  // Paletas (Naranja)
+        new Color(255, 204, 0),   // Pelota (Amarillo)
+        new Color(255, 255, 204), // Texto (Amarillo claro)
+        new Color(204, 102, 0),   // Divisor (Marrón)
+        new Color(153, 76, 0),    // Botón (Marrón oscuro)
+        new Color(255, 255, 204), // Texto de botón
+        new Color(0, 30, 60, 220) // Panel superpuesto
     );
     
     public static final Theme DARK = new Theme(
         "Dark",
-        new Color(30, 30, 30),    // Background (Dark Gray)
-        new Color(100, 100, 100), // Paddles (Gray)
-        new Color(200, 200, 200), // Ball (Light Gray)
-        new Color(200, 200, 200), // Text (Light Gray)
-        new Color(80, 80, 80),    // Divider 
-        new Color(60, 60, 60),    // Button (Dark Gray)
-        new Color(200, 200, 200), // Button Text
-        new Color(15, 15, 15, 230)// Panel Overlay
+        new Color(30, 30, 30),    // Fondo (Gris oscuro)
+        new Color(100, 100, 100), // Paletas (Gris)
+        new Color(200, 200, 200), // Pelota (Gris claro)
+        new Color(200, 200, 200), // Texto (Gris claro)
+        new Color(80, 80, 80),    // Divisor 
+        new Color(60, 60, 60),    // Botón (Gris oscuro)
+        new Color(200, 200, 200), // Texto de botón
+        new Color(15, 15, 15, 230)// Panel superpuesto
     );
     
-    // Array of all available themes
+    // Array de todos los temas disponibles
     public static final Theme[] AVAILABLE_THEMES = {CLASSIC, NEON, RETRO, DARK};
 }

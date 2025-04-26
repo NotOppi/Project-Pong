@@ -5,7 +5,7 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 
 /**
- * Represents a paddle in the pong game
+ * Representa una paleta en el juego de pong
  */
 public class Paddle extends Rectangle {
     private int yVelocity = 0;
@@ -14,7 +14,12 @@ public class Paddle extends Rectangle {
     private Color color = Color.WHITE;
     
     /**
-     * Creates a new paddle at the specified position
+     * Crea una nueva paleta en la posición especificada
+     * @param x posición x inicial
+     * @param y posición y inicial
+     * @param width anchura de la paleta
+     * @param height altura de la paleta
+     * @param color color de la paleta
      */
     public Paddle(int x, int y, int width, int height, Color color) {
         super(x, y, width, height);
@@ -24,23 +29,23 @@ public class Paddle extends Rectangle {
     }
     
     /**
-     * Sets the paddle color
-     * @param color the new color
+     * Establece el color de la paleta
+     * @param color el nuevo color
      */
     public void setColor(Color color) {
         this.color = color;
     }
     
     /**
-     * Sets the paddle's vertical movement speed
-     * @param yVelocity the vertical velocity (-ve = up, +ve = down)
+     * Establece la velocidad vertical de la paleta
+     * @param yVelocity la velocidad vertical (-ve = arriba, +ve = abajo)
      */
     public void setYVelocity(int yVelocity) {
         this.yVelocity = yVelocity;
     }
     
     /**
-     * Resets the paddle to starting position
+     * Reinicia la paleta a su posición inicial
      */
     public void reset() {
         x = startX;
@@ -49,12 +54,13 @@ public class Paddle extends Rectangle {
     }
     
     /**
-     * Updates the paddle's position
+     * Actualiza la posición de la paleta
      */
     public void update() {
+        // Actualiza la posición basada en la velocidad
         y += yVelocity;
         
-        // Keep paddle within screen bounds
+        // Mantiene la paleta dentro de los límites de la pantalla
         if (y < 0) {
             y = 0;
         }
@@ -64,7 +70,8 @@ public class Paddle extends Rectangle {
     }
     
     /**
-     * Draws the paddle
+     * Dibuja la paleta en pantalla
+     * @param g contexto gráfico donde dibujar
      */
     public void draw(Graphics g) {
         g.setColor(color);

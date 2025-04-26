@@ -5,21 +5,24 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 
 /**
- * Represents the ball in the pong game
+ * Representa la pelota en el juego de pong
  */
 public class Ball extends Rectangle {
-    // Increase default velocity from 2.5f to 4.0f
+    // Velocidad predeterminada aumentada de 2.5f a 4.0f
     private float xVelocity = 4.0f;  
     private float yVelocity = 4.0f;
     private float speedMultiplier = 1.0f;
-    // Increase max speed to 15 to allow faster gameplay
+    // Velocidad máxima aumentada a 15 para permitir un juego más rápido
     private final float MAX_SPEED = 15.0f;
-    // Increase default speed from 2.5f to 4.0f
+    // Velocidad predeterminada aumentada de 2.5f a 4.0f
     private final float DEFAULT_SPEED = 4.0f;
     private Color color = Color.WHITE;
     
     /**
-     * Creates a new ball at the specified position
+     * Crea una nueva pelota en la posición especificada
+     * @param x posición x inicial
+     * @param y posición y inicial
+     * @param size tamaño de la pelota (ancho y alto)
      */
     public Ball(int x, int y, int size) {
         super(x, y, size, size);
@@ -27,46 +30,46 @@ public class Ball extends Rectangle {
     }
     
     /**
-     * Sets the ball color
-     * @param color the new color
+     * Establece el color de la pelota
+     * @param color el nuevo color
      */
     public void setColor(Color color) {
         this.color = color;
     }
     
     /**
-     * Sets the ball speed multiplier
-     * @param multiplier the speed multiplier
+     * Establece el multiplicador de velocidad de la pelota
+     * @param multiplier el multiplicador de velocidad
      */
     public void setSpeedMultiplier(float multiplier) {
         this.speedMultiplier = multiplier;
     }
     
     /**
-     * Resets the ball to starting position and randomizes direction
+     * Reinicia la pelota a su posición inicial y aleatoriza la dirección
      */
     public void reset() {
         x = PongGame.WIDTH / 2 - width / 2;
         y = PongGame.HEIGHT / 2 - height / 2;
         
-        // Randomize initial direction
+        // Aleatoriza la dirección inicial
         xVelocity = (Math.random() > 0.5 ? 1 : -1) * DEFAULT_SPEED;
         yVelocity = (Math.random() > 0.5 ? 1 : -1) * DEFAULT_SPEED;
     }
     
     /**
-     * Updates the ball's position
+     * Actualiza la posición de la pelota
      */
     public void update() {
-        // Apply speed multiplier
+        // Aplica el multiplicador de velocidad
         float actualXVelocity = xVelocity * speedMultiplier;
         float actualYVelocity = yVelocity * speedMultiplier;
         
-        // Update position
+        // Actualiza la posición
         x += (int)actualXVelocity;
         y += (int)actualYVelocity;
         
-        // Bounce off top and bottom walls
+        // Rebota en las paredes superior e inferior
         if (y <= 0) {
             y = 0;
             yVelocity = Math.abs(yVelocity);
@@ -78,55 +81,56 @@ public class Ball extends Rectangle {
     }
     
     /**
-     * Deflects the ball from a paddle based on where it hit
-     * @param paddle the paddle that was hit
+     * Hace rebotar la pelota en una paleta según donde golpeó
+     * @param paddle la paleta que fue golpeada
      */
     public void deflectFromPaddle(Paddle paddle) {
-        // Reverse x direction
+        // Invierte la dirección en x
         xVelocity = -xVelocity;
         
-        // Adjust angle based on where the ball hit the paddle
+        // Ajusta el ángulo basado en dónde golpeó la pelota en la paleta
         float relativeIntersectY = (paddle.y + (paddle.height / 2)) - (y + (height / 2));
         float normalizedRelativeIntersectionY = relativeIntersectY / (paddle.height / 2);
-        float bounceAngle = normalizedRelativeIntersectionY * 0.75f; // 75% of max angle
+        float bounceAngle = normalizedRelativeIntersectionY * 0.75f; // 75% del ángulo máximo
         
-        // Adjust y velocity based on where the ball hit the paddle
+        // Ajusta la velocidad en y basado en dónde golpeó la pelota en la paleta
         yVelocity = DEFAULT_SPEED * -bounceAngle;
         
-        // Increase speed slightly on each hit, up to max speed
-        // Increased from 5% to 8% for faster acceleration
+        // Aumenta ligeramente la velocidad en cada golpe, hasta la velocidad máxima
+        // Aumentado del 5% al 8% para una aceleración más rápida
         if (Math.abs(xVelocity) < MAX_SPEED) {
-            xVelocity *= 1.08f; // 8% speed increase (was 5%)
+            xVelocity *= 1.08f; // 8% de incremento de velocidad (antes era 5%)
         }
         
-        // Prevent ball from getting stuck in paddle
+        // Evita que la pelota se quede atrapada en la paleta
         if (paddle.x < PongGame.WIDTH / 2) {
-            // Left paddle
+            // Paleta izquierda
             x = paddle.x + paddle.width;
         } else {
-            // Right paddle
+            // Paleta derecha
             x = paddle.x - width;
         }
     }
     
     /**
-     * Get the current x velocity
-     * @return the ball's horizontal velocity
+     * Obtiene la velocidad actual en x
+     * @return la velocidad horizontal de la pelota
      */
     public float getXVelocity() {
         return xVelocity;
     }
     
     /**
-     * Get the current y velocity
-     * @return the ball's vertical velocity
+     * Obtiene la velocidad actual en y
+     * @return la velocidad vertical de la pelota
      */
     public float getYVelocity() {
         return yVelocity;
     }
     
     /**
-     * Draws the ball
+     * Dibuja la pelota
+     * @param g contexto gráfico donde dibujar
      */
     public void draw(Graphics g) {
         g.setColor(color);

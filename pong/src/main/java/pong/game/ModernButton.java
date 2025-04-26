@@ -10,18 +10,18 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * A custom styled button for the game UI
+ * Un botón con estilo personalizado para la interfaz del juego
  */
 public class ModernButton extends JButton {
     private boolean isRound = false;
     private boolean isHovered = false;
     private boolean isPressed = false;
-    private Color buttonColor = new Color(70, 130, 180); // Default Steel Blue
+    private Color buttonColor = new Color(70, 130, 180); // Azul Acero por defecto
     private Color textColor = Color.WHITE;
     
     /**
-     * Creates a new modern style button
-     * @param text the button text
+     * Crea un nuevo botón con estilo moderno
+     * @param text el texto del botón
      */
     public ModernButton(String text) {
         super(text);
@@ -29,9 +29,9 @@ public class ModernButton extends JButton {
     }
     
     /**
-     * Creates a new modern style button
-     * @param text the button text
-     * @param round whether the button should be round
+     * Crea un nuevo botón con estilo moderno
+     * @param text el texto del botón
+     * @param round si el botón debe ser redondo
      */
     public ModernButton(String text, boolean round) {
         super(text);
@@ -40,7 +40,7 @@ public class ModernButton extends JButton {
     }
     
     /**
-     * Sets up the button appearance and interaction
+     * Configura la apariencia e interacción del botón
      */
     private void setupButton() {
         setFocusPainted(false);
@@ -49,7 +49,7 @@ public class ModernButton extends JButton {
         setFont(new Font("Arial", Font.BOLD, 18));
         setForeground(textColor);
         
-        // Mouse events to handle hover and press effects
+        // Eventos de ratón para manejar efectos de hover y presionado
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -78,8 +78,8 @@ public class ModernButton extends JButton {
     }
     
     /**
-     * Updates the button colors based on the current theme
-     * @param theme the theme to apply
+     * Actualiza los colores del botón basados en el tema actual
+     * @param theme el tema a aplicar
      */
     public void applyTheme(Theme theme) {
         buttonColor = theme.getButtonColor();
@@ -96,7 +96,7 @@ public class ModernButton extends JButton {
         int width = getWidth();
         int height = getHeight();
         
-        // Base color with hover and press effects
+        // Color base con efectos de hover y presionado
         Color baseColor = buttonColor;
         if (isPressed) {
             baseColor = baseColor.darker();
@@ -104,7 +104,7 @@ public class ModernButton extends JButton {
             baseColor = baseColor.brighter();
         }
         
-        // Draw button background
+        // Dibuja el fondo del botón
         g2d.setColor(baseColor);
         if (isRound) {
             g2d.fillOval(0, 0, width, height);
@@ -112,7 +112,7 @@ public class ModernButton extends JButton {
             g2d.fillRoundRect(0, 0, width, height, 15, 15);
         }
         
-        // Draw border
+        // Dibuja el borde
         g2d.setColor(baseColor.darker());
         if (isRound) {
             g2d.drawOval(0, 0, width - 1, height - 1);
@@ -122,7 +122,7 @@ public class ModernButton extends JButton {
         
         g2d.dispose();
         
-        // Draw text
+        // Dibuja el texto
         super.paintComponent(g);
     }
 }
