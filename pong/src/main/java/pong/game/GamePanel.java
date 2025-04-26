@@ -597,7 +597,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         int aiPaddleCenterY = (int)(aiPaddle.getY() + aiPaddle.getHeight() / 2);
         int ballCenterY = (int)(ball.getY() + ball.getHeight() / 2);
         
-        // Añade retardo de reacción basado en la dificultad
         // Para dificultades más altas, la IA predice dónde estará la pelota
         int targetY = ballCenterY;
         
@@ -618,16 +617,23 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
         }
         
-        // Aplica "tiempo de reacción" - hace que la IA sea menos perfecta en dificultades más fáciles
-        double reactionChance = Math.random();
-        if (reactionChance > aiReactionTime) {
-            if (aiPaddleCenterY < targetY) {
-                aiPaddle.setYVelocity(aiPaddleSpeed);
-            } else if (aiPaddleCenterY > targetY) {
-                aiPaddle.setYVelocity(-aiPaddleSpeed);
-            } else {
-                aiPaddle.setYVelocity(0);
+        // Crea una pequeña "zona muerta" para evitar oscilaciones pequeñas
+        int deadZone = 5;
+        int distanceToTarget = targetY - aiPaddleCenterY;
+        
+        // Movimiento suave con velocidad proporcional a la distancia
+        if (Math.abs(distanceToTarget) > deadZone) {
+            // Aplica "tiempo de reacción" solo ocasionalmente para reducir cambios bruscos
+            double reactionRoll = Math.random();
+            if (reactionRoll > aiReactionTime) {
+                // Velocidad proporcional con límite máximo
+                int direction = (distanceToTarget > 0) ? 1 : -1;
+                int speed = Math.min(Math.abs(distanceToTarget) / 10 + 1, aiPaddleSpeed);
+                aiPaddle.setYVelocity(direction * speed);
             }
+        } else {
+            // Si está suficientemente cerca del objetivo, detén el movimiento
+            aiPaddle.setYVelocity(0);
         }
         
         aiPaddle.update();
