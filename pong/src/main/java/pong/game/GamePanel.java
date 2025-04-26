@@ -45,6 +45,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private JButton mediumButton;
     private JButton hardButton;
     private JButton backButton;
+    private JButton exitToMenuButton;
     private String hoverDescription = "";
     private Map<JButton, Integer> originalButtonPositions;
     private JButton[] themeButtons;
@@ -183,6 +184,29 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         originalButtonPositions.put(difficultyButton, difficultyButton.getY());
         originalButtonPositions.put(multiplayerButton, multiplayerButton.getY());
         originalButtonPositions.put(themeButton, themeButton.getY());
+
+        // Crear botón para salir al menú desde la pausa
+        exitToMenuButton = new ModernButton("Volver al Menú");
+        exitToMenuButton.setBounds(PongGame.WIDTH / 2 - BUTTON_WIDTH / 2, 
+                                PongGame.HEIGHT / 2 + 70, 
+                                BUTTON_WIDTH, BUTTON_HEIGHT);
+        exitToMenuButton.setFocusable(false);
+        exitToMenuButton.addActionListener(e -> {
+            // Terminar la partida y volver al menú principal
+            gameRunning = false;
+            gamePaused = false;
+            
+            // Reiniciar posiciones de las paletas y la pelota
+            playerPaddle.reset();
+            aiPaddle.reset();
+            ball.reset();
+            
+            // Volver al menú principal
+            setScreen(ScreenState.MAIN_MENU);
+            this.requestFocus();
+        });
+        exitToMenuButton.setVisible(false); // Inicialmente invisible
+        add(exitToMenuButton);
     }
     
     /**
@@ -397,12 +421,20 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
         }
         // Dibuja mensaje de pausa si el juego está en pausa y no ha terminado
+        // Dibuja mensaje de pausa si el juego está en pausa y no ha terminado
         else if (gamePaused && gameRunning) {
             g.setColor(new Color(255, 255, 255, 200)); // Blanco semitransparente
             g.setFont(new Font("Arial", Font.BOLD, 50));
-            g.drawString("PAUSA", PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2);
+            
+            // Centrar texto usando FontMetrics
+            String pausaTexto = "PAUSA";
+            int pausaWidth = g.getFontMetrics().stringWidth(pausaTexto);
+            g.drawString(pausaTexto, PongGame.WIDTH / 2 - pausaWidth / 2, PongGame.HEIGHT / 2 - 50);
+            
             g.setFont(new Font("Arial", Font.PLAIN, 20));
-            g.drawString("Presiona ESPACIO para continuar", PongGame.WIDTH / 2 - 140, PongGame.HEIGHT / 2 + 40);
+            String continuarTexto = "Presiona ESPACIO para continuar";
+            int continuarWidth = g.getFontMetrics().stringWidth(continuarTexto);
+            g.drawString(continuarTexto, PongGame.WIDTH / 2 - continuarWidth / 2, PongGame.HEIGHT / 2);
         }
         
         // Muestra el modo de juego y tema en la esquina
@@ -711,12 +743,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         
         // Mostrar/ocultar botones según estado del juego y visibilidad del menú
         boolean showMainButtons = (!gameRunning || gameOver) && 
-                                  currentScreen == ScreenState.MAIN_MENU;
+                                currentScreen == ScreenState.MAIN_MENU;
         startButton.setVisible(showMainButtons);
         howToPlayButton.setVisible(showMainButtons);
         difficultyButton.setVisible(showMainButtons);
         multiplayerButton.setVisible(showMainButtons);
         themeButton.setVisible(showMainButtons);
+        
+        // Controla la visibilidad del botón de salir al menú
+        exitToMenuButton.setVisible(gamePaused && gameRunning);
         
         // Si el juego terminó, reposiciona los botones a sus posiciones originales
         if (gameOver && showMainButtons) {
@@ -791,6 +826,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             } else {
                 // Alterna estado de pausa
                 gamePaused = !gamePaused;
+                // Actualiza la visibilidad del botón de salir
+                exitToMenuButton.setVisible(gamePaused);
+                // Enfoca el panel para que siga recibiendo eventos de teclado
+                this.requestFocus();
             }
         }
     }
