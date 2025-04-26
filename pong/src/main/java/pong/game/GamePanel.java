@@ -377,15 +377,23 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         if (gameOver) {
             g.setColor(new Color(255, 215, 0, 220)); // Oro semitransparente
             g.setFont(new Font("Arial", Font.BOLD, 50));
-            g.drawString("FIN DEL JUEGO", PongGame.WIDTH / 2 - 150, PongGame.HEIGHT / 2 - 50);
+            
+            // Centrar texto usando FontMetrics
+            String finDelJuego = "FIN DEL JUEGO";
+            int finDelJuegoWidth = g.getFontMetrics().stringWidth(finDelJuego);
+            g.drawString(finDelJuego, PongGame.WIDTH / 2 - finDelJuegoWidth / 2, PongGame.HEIGHT / 2 - 50);
             
             g.setFont(new Font("Arial", Font.BOLD, 30));
-            g.drawString(winner + " Gana!", PongGame.WIDTH / 2 - 70, PongGame.HEIGHT / 2);
+            String ganadorTexto = winner + " Gana!";
+            int ganadorTextoWidth = g.getFontMetrics().stringWidth(ganadorTexto);
+            g.drawString(ganadorTexto, PongGame.WIDTH / 2 - ganadorTextoWidth / 2, PongGame.HEIGHT / 2);
             
             // Solo muestra instrucción de teclado si los botones no son visibles
             if (!startButton.isVisible()) {
                 g.setFont(new Font("Arial", Font.PLAIN, 20));
-                g.drawString("Presiona ESPACIO para jugar de nuevo", PongGame.WIDTH / 2 - 170, PongGame.HEIGHT / 2 + 40);
+                String instrucciones = "Presiona ESPACIO para jugar de nuevo";
+                int instruccionesWidth = g.getFontMetrics().stringWidth(instrucciones);
+                g.drawString(instrucciones, PongGame.WIDTH / 2 - instruccionesWidth / 2, PongGame.HEIGHT / 2 + 40);
             }
         }
         // Dibuja mensaje de pausa si el juego está en pausa y no ha terminado
