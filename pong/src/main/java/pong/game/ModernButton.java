@@ -10,7 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * Un botón con estilo personalizado para la interfaz del juego
+ * Un botón con estilo personalizado para la interfaz del juego hola martin
  */
 public class ModernButton extends JButton {
     private boolean isRound = false;
