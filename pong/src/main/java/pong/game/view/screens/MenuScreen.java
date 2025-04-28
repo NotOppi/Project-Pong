@@ -48,29 +48,29 @@ public class MenuScreen extends JPanel {
         int startY = (PongGame.HEIGHT - totalButtonsHeight) / 2;
         
         // Botón Iniciar Juego
-        startButton = createButton("Iniciar Juego", startY, e -> {
+        startButton = createButton("Iniciar Juego", startY, _ -> {
             controller.startGame();
             model.setCurrentScreen("GAME");
         });
         
         // Botón Cómo Jugar
-        howToPlayButton = createButton("Cómo Jugar", startY + BUTTON_HEIGHT + BUTTON_SPACING, e -> {
+        howToPlayButton = createButton("Cómo Jugar", startY + BUTTON_HEIGHT + BUTTON_SPACING, _ -> {
             model.setCurrentScreen("INSTRUCTIONS");
         });
         
         // Botón Dificultad
-        difficultyButton = createButton("Nivel de Dificultad", startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, e -> {
+        difficultyButton = createButton("Nivel de Dificultad", startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, _ -> {
             model.setCurrentScreen("DIFFICULTY");
         });
         
         // Botón Multijugador
-        multiplayerButton = createButton("Un Jugador", startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, e -> {
+        multiplayerButton = createButton("Un Jugador", startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, _ -> {
             controller.toggleMultiplayerMode();
             multiplayerButton.setText(model.isMultiplayerMode() ? "Modo Multijugador" : "Un Jugador");
         });
         
         // Botón Tema
-        themeButton = createButton("Cambiar Tema", startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 4, e -> {
+        themeButton = createButton("Cambiar Tema", startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 4, _ -> {
             model.setCurrentScreen("THEMES");
         });
         

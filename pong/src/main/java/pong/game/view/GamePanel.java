@@ -18,7 +18,7 @@ import java.util.Observable;
  */
 @SuppressWarnings("deprecation")
 public class GamePanel extends JPanel implements Observer {
-    
+
     private GameModel model;
     private GameController controller;
     private InputController inputController;
@@ -72,7 +72,7 @@ public class GamePanel extends JPanel implements Observer {
         showScreen(ScreenState.MAIN_MENU);
         
         // Iniciar el timer para actualizar el juego
-        Timer gameTimer = new Timer(10, e -> {
+        Timer gameTimer = new Timer(10, _ -> {
             controller.update();
             repaint();
         });

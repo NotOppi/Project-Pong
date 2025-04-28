@@ -25,7 +25,7 @@ public class GameScreen extends JPanel {
         exitToMenuButton = new ModernButton("Volver al Menú");
         exitToMenuButton.setBounds(PongGame.WIDTH / 2 - 100, PongGame.HEIGHT / 2 + 70, 200, 45);
         exitToMenuButton.setFocusable(false);
-        exitToMenuButton.addActionListener(e -> {
+        exitToMenuButton.addActionListener(_ -> {
             // Terminar la partida y volver al menú principal
             model.setGameRunning(false);
             model.setGamePaused(false);

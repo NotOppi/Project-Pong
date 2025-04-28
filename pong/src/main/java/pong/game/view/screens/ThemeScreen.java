@@ -30,7 +30,7 @@ public class ThemeScreen extends JPanel {
         closeButton = new ModernButton("X", true);
         closeButton.setBounds(720, 20, 40, 40);
         closeButton.setFocusable(false);
-        closeButton.addActionListener(e -> {
+        closeButton.addActionListener(_ -> {
             model.setCurrentScreen("MAIN_MENU");
         });
         add(closeButton);
@@ -70,7 +70,7 @@ public class ThemeScreen extends JPanel {
                 }
             });
             
-            themeButtons[i].addActionListener(e -> {
+            themeButtons[i].addActionListener(_ -> {
                 controller.setTheme(Theme.AVAILABLE_THEMES[themeIndex]);
                 model.setCurrentScreen("MAIN_MENU");
             });

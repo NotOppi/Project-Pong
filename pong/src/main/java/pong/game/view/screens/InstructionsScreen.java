@@ -23,7 +23,7 @@ public class InstructionsScreen extends JPanel {
         closeButton = new ModernButton("X", true);
         closeButton.setBounds(720, 20, 40, 40);
         closeButton.setFocusable(false);
-        closeButton.addActionListener(e -> {
+        closeButton.addActionListener(_ -> {
             model.setCurrentScreen("MAIN_MENU");
         });
         add(closeButton);

@@ -33,7 +33,7 @@ public class DifficultyScreen extends JPanel {
         closeButton = new ModernButton("X", true);
         closeButton.setBounds(720, 20, 40, 40);
         closeButton.setFocusable(false);
-        closeButton.addActionListener(e -> {
+        closeButton.addActionListener(_ -> {
             model.setCurrentScreen("MAIN_MENU");
         });
         add(closeButton);
@@ -53,7 +53,7 @@ public class DifficultyScreen extends JPanel {
             "La IA se mueve lentamente y tiene tiempos de reacción largos,\n" +
             "permitiéndote anticipar y devolver la pelota con facilidad.\n" +
             "La velocidad de la pelota es estándar.",
-            e -> {
+            _ -> {
                 controller.setDifficulty(GameModel.Difficulty.EASY);
                 model.setCurrentScreen("MAIN_MENU");
             });
@@ -62,7 +62,7 @@ public class DifficultyScreen extends JPanel {
         mediumButton = createDescriptiveButton("Medio", 210, 
             "La IA tiene mayor precisión y tiempos de reacción más cortos,\n" +
             "ofreciendo un desafío equilibrado sin aumentar la velocidad de la pelota.",
-            e -> {
+            _ -> {
                 controller.setDifficulty(GameModel.Difficulty.MEDIUM);
                 model.setCurrentScreen("MAIN_MENU");
             });
@@ -71,13 +71,13 @@ public class DifficultyScreen extends JPanel {
         hardButton = createDescriptiveButton("Difícil", 270, 
             "La IA anticipa mejor tus tiros y se mueve con gran agilidad;\n" +
             "además, la pelota viaja un poco más rápido para aumentar la intensidad.",
-            e -> {
+            _ -> {
                 controller.setDifficulty(GameModel.Difficulty.HARD);
                 model.setCurrentScreen("MAIN_MENU");
             });
         
         // Botón Volver
-        backButton = createButton("Volver", 380, e -> {
+        backButton = createButton("Volver", 380, _ -> {
             model.setCurrentScreen("MAIN_MENU");
         });
     }

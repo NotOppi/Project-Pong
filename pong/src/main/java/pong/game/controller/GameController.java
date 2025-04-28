@@ -328,7 +328,7 @@ public class GameController {
         model.setDelayAfterScore(true);
         
         // Usa un temporizador para esperar antes de reiniciar la pelota
-        javax.swing.Timer delayTimer = new javax.swing.Timer(1500, e -> {
+        javax.swing.Timer delayTimer = new javax.swing.Timer(1500, _ -> {
             // Después del retraso, reiniciar la pelota y desactivar el estado
             model.getBall().reset();
             model.setDelayAfterScore(false);
