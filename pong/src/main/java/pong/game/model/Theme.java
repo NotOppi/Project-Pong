@@ -1,4 +1,4 @@
-package pong.game;
+package pong.game.model;
 
 import java.awt.Color;
 

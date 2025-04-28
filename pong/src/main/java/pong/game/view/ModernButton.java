@@ -1,6 +1,9 @@
-package pong.game;
+package pong.game.view;
 
 import javax.swing.JButton;
+
+import pong.game.model.Theme;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;

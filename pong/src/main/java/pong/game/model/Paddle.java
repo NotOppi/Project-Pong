@@ -1,4 +1,4 @@
-package pong.game;
+package pong.game.model;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -64,8 +64,8 @@ public class Paddle extends Rectangle {
         if (y < 0) {
             y = 0;
         }
-        if (y > PongGame.HEIGHT - height) {
-            y = PongGame.HEIGHT - height;
+        if (y > 600 - height) { // 600 es el valor de PongGame.HEIGHT
+            y = 600 - height;
         }
     }
     

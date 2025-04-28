@@ -2,6 +2,8 @@ package pong.game;
 
 import javax.swing.SwingUtilities;
 
+import pong.game.view.PongGame;
+
 /**
  * Clase principal que lanza el juego Pong.
  */

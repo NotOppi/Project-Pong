@@ -1,8 +1,10 @@
-package pong.game;
+package pong.game.model;
 
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
+
+import pong.game.view.PongGame;
 
 /**
  * Representa la pelota en el juego de pong
@@ -28,6 +30,15 @@ public class Ball extends Rectangle {
         super(x, y, size, size);
         reset();
     }
+
+    /**
+     * Obtiene el multiplicador de velocidad actual
+     * @return multiplicador de velocidad de la pelota
+     */
+    public float getSpeedMultiplier() {
+        return speedMultiplier;
+    }
+    
     
     /**
      * Establece el color de la pelota
@@ -49,8 +60,8 @@ public class Ball extends Rectangle {
      * Reinicia la pelota a su posición inicial y aleatoriza la dirección
      */
     public void reset() {
-        x = PongGame.WIDTH / 2 - width / 2;
-        y = PongGame.HEIGHT / 2 - height / 2;
+        x = 800 / 2 - width / 2;
+        y = 600 / 2 - height / 2;
         
         // Aleatoriza la dirección inicial
         xVelocity = (Math.random() > 0.5 ? 1 : -1) * DEFAULT_SPEED;
@@ -74,8 +85,8 @@ public class Ball extends Rectangle {
             y = 0;
             yVelocity = Math.abs(yVelocity);
         }
-        if (y >= PongGame.HEIGHT - height) {
-            y = PongGame.HEIGHT - height;
+        if (y >= 600 - height) { // 600 es PongGame.HEIGHT
+            y = 600 - height;
             yVelocity = -Math.abs(yVelocity);
         }
     }
@@ -126,6 +137,16 @@ public class Ball extends Rectangle {
      */
     public float getYVelocity() {
         return yVelocity;
+    }
+
+    /**
+     * Establece la posición de la pelota
+     * @param x nueva posición x
+     * @param y nueva posición y
+     */
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
     
     /**
