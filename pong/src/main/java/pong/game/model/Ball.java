@@ -15,7 +15,7 @@ public class Ball extends Rectangle {
     private float yVelocity = 4.0f;
     private float speedMultiplier = 1.0f;
     // Velocidad máxima aumentada a 15 para permitir un juego más rápido
-    private final float MAX_SPEED = 15.0f;
+    private final float MAX_SPEED = 10.0f;
     // Velocidad predeterminada aumentada de 2.5f a 4.0f
     private final float DEFAULT_SPEED = 4.0f;
     private Color color = Color.WHITE;
