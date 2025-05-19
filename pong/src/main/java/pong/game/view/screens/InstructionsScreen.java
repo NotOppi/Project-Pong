@@ -1,60 +1,128 @@
 package pong.game.view.screens;
 
-import pong.game.model.GameModel;
+import pong.game.controller.GameController;
 import pong.game.view.ModernButton;
+import pong.game.view.interfaces.InstructionsScreenInterface;
 
 import javax.swing.JPanel;
 import java.awt.Graphics;
 import java.awt.Font;
+import java.awt.Color;
 
 /**
- * Pantalla de instrucciones del juego
+ * Pantalla de instrucciones del juego.
+ * Implementa el patrón MVC estricto, mostrando las reglas del juego
+ * y controles para los modos de un jugador y multijugador.
  */
-public class InstructionsScreen extends JPanel {
-    private GameModel model;
+public class InstructionsScreen extends JPanel implements InstructionsScreenInterface {
+    // Controlador del juego
+    private GameController controller;
+    
+    // Componentes UI
     private ModernButton closeButton;
     
-    public InstructionsScreen(GameModel model) {
-        this.model = model;
+    // Variables de estado
+    private Color backgroundColor = Color.BLACK;
+    private Color textColor = Color.WHITE;
+    private Color overlayColor = new Color(0, 0, 0, 180);
+    private boolean isMultiplayerMode = false;
+    
+    /**
+     * Constructor de la pantalla de instrucciones.
+     * 
+     * @param controller Controlador del juego
+     */
+    public InstructionsScreen(GameController controller) {
+        this.controller = controller;
+        controller.registerInstructionsScreen(this);
+        
         setLayout(null);
         setOpaque(false);
         
         // Configurar botón de cerrar
+        initCloseButton();
+    }
+    
+    /**
+     * Inicializa el botón de cerrar.
+     */
+    private void initCloseButton() {
         closeButton = new ModernButton("X", true);
         closeButton.setBounds(720, 20, 40, 40);
         closeButton.setFocusable(false);
         closeButton.addActionListener(_ -> {
-            model.setCurrentScreen("MAIN_MENU");
+            controller.navigateToMainMenu();
         });
         add(closeButton);
-        
-        // Aplicar tema
-        if (model.getCurrentTheme() != null) {
-            closeButton.applyTheme(model.getCurrentTheme());
+    }
+    
+    // Implementaciones de InstructionsScreenInterface
+    @Override
+    public void setBackgroundColor(Color color) {
+        this.backgroundColor = color;
+    }
+    
+    @Override
+    public void setTextColor(Color color) {
+        this.textColor = color;
+    }
+    
+    @Override
+    public void setOverlayColor(Color color) {
+        this.overlayColor = color;
+    }
+    
+    @Override
+    public void setMultiplayerMode(boolean isMultiplayer) {
+        this.isMultiplayerMode = isMultiplayer;
+    }
+    
+    @Override
+    public void updateButtonThemes(Color buttonColor, Color buttonTextColor) {
+        if (closeButton != null) {
+            closeButton.setButtonColor(buttonColor);
+            closeButton.setTextColor(buttonTextColor);
         }
     }
     
     @Override
+    public void refresh() {
+        repaint();
+    }
+    
+    // Métodos sobrescritos
+    @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         
-        // Solo dibuja si hay un tema configurado
-        if (model.getCurrentTheme() == null) return;
-        
-        // Dibuja fondo semitransparente
-        g.setColor(model.getCurrentTheme().getPanelOverlayColor());
+        // Dibuja overlay semitransparente
+        g.setColor(overlayColor);
         g.fillRect(0, 0, getWidth(), getHeight());
         
-        // Dibuja título de instrucciones
-        g.setColor(model.getCurrentTheme().getTextColor());
+        drawTitle(g);
+        drawInstructions(g);
+        drawFooter(g);
+    }
+    
+    /**
+     * Dibuja el título de la pantalla de instrucciones.
+     */
+    private void drawTitle(Graphics g) {
+        g.setColor(textColor);
         g.setFont(new Font("Arial", Font.BOLD, 36));
-        g.drawString("Cómo Jugar", getWidth() / 2 - 120, 80);
-        
-        // Dibuja texto de instrucciones
+        String title = "Cómo Jugar";
+        int titleWidth = g.getFontMetrics().stringWidth(title);
+        g.drawString(title, getWidth() / 2 - titleWidth / 2, 80);
+    }
+    
+    /**
+     * Dibuja las instrucciones según el modo de juego.
+     */
+    private void drawInstructions(Graphics g) {
         g.setFont(new Font("Arial", Font.PLAIN, 20));
         String[] instructions;
         
-        if (model.isMultiplayerMode()) {
+        if (isMultiplayerMode) {
             instructions = new String[] {
                 "• Jugador 1: Usa la tecla W para mover la paleta hacia arriba",
                 "• Jugador 1: Usa la tecla S para mover la paleta hacia abajo",
@@ -74,10 +142,36 @@ public class InstructionsScreen extends JPanel {
             };
         }
         
-        int yPos = 150;
+        // Calcular posición inicial para centrar verticalmente las instrucciones
+        int totalHeight = instructions.length * 40; // 40px por línea
+        int startY = (getHeight() - totalHeight) / 2 + 20; // +20 para compensar por el título
+        
+        // Dibujar instrucciones centradas horizontalmente
+        int maxWidth = 0;
         for (String line : instructions) {
-            g.drawString(line, getWidth() / 2 - 200, yPos);
+            int lineWidth = g.getFontMetrics().stringWidth(line);
+            if (lineWidth > maxWidth) {
+                maxWidth = lineWidth;
+            }
+        }
+        
+        int yPos = startY;
+        for (String line : instructions) {
+            int lineWidth = g.getFontMetrics().stringWidth(line);
+            int adjustedX = getWidth() / 2 - lineWidth / 2;
+            g.drawString(line, adjustedX, yPos);
             yPos += 40;
         }
+    }
+    
+    /**
+     * Dibuja el pie de página de la pantalla de instrucciones.
+     */
+    private void drawFooter(Graphics g) {
+        g.setFont(new Font("Arial", Font.ITALIC, 16));
+        g.setColor(new Color(200, 200, 200, 220)); // Gris claro semitransparente
+        String note = "¡Diviértete jugando!";
+        int noteWidth = g.getFontMetrics().stringWidth(note);
+        g.drawString(note, getWidth() / 2 - noteWidth / 2, getHeight() - 50);
     }
 }

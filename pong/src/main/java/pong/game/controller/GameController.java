@@ -4,117 +4,270 @@ import pong.game.model.GameModel;
 import pong.game.model.Ball;
 import pong.game.model.Paddle;
 import pong.game.model.Theme;
+import pong.game.view.interfaces.*;
+import pong.game.controller.GameController.NavigationListener;
+import pong.game.controller.dto.ThemeDTO;
+
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.Timer;
 
 /**
  * Controla la lógica del juego y actualiza el modelo
+ * Sirve como intermediario entre el modelo y las vistas
  */
 public class GameController {
-    private GameModel model;
+    // Constantes del juego
     private static final int WINNING_SCORE = 10;
+    private static final int GAME_WIDTH = 800;
+    private static final int GAME_HEIGHT = 600;
+    private static final int SCORING_DELAY_MS = 1500;
+    private static final int PADDLE_SPEED = 5;
+    private static final int CENTER_POSITION_X = GAME_WIDTH / 2;
+    private static final int CENTER_POSITION_Y = GAME_HEIGHT / 2;
     
+    private GameModel model;
+    
+    // Referencias a las interfaces de vista
+    private GameScreenInterface gameScreen;
+    private MenuScreenInterface menuScreen;
+    private InstructionsScreenInterface instructionsScreen;
+    private ThemeScreenInterface themeScreen;
+    private DifficultyScreenInterface difficultyScreen;
+    
+    // Lista de todas las vistas para actualizaciones generales
+    private List<ViewInterface> views = new ArrayList<>();
+    
+    // Interfaz para manejar navegación entre pantallas
+    private NavigationListener navigationListener;
+    
+    /**
+     * Constructor que recibe el modelo
+     */
     public GameController(GameModel model) {
         this.model = model;
+        initializeModelDefaults();
+    }
+    
+    private void initializeModelDefaults() {
+        if (model.getCurrentTheme() == null) {
+            model.setCurrentTheme(Theme.CLASSIC);
+        }
+        if (model.getCurrentDifficulty() == null) {
+            model.setCurrentDifficulty(GameModel.Difficulty.MEDIUM);
+        }
+    }
+    
+    //region Registro de Vistas
+    
+    /**
+     * Registra una vista para actualizaciones
+     */
+    public void registerView(ViewInterface view) {
+        if (!views.contains(view)) {
+            views.add(view);
+        }
+    }
+    
+    public void registerGameScreen(GameScreenInterface screen) {
+        this.gameScreen = screen;
+        registerView(screen);
+    }
+    
+    public void registerMenuScreen(MenuScreenInterface screen) {
+        this.menuScreen = screen;
+        registerView(screen);
+    }
+    
+    public void registerInstructionsScreen(InstructionsScreenInterface screen) {
+        this.instructionsScreen = screen;
+        registerView(screen);
+    }
+    
+    public void registerThemeScreen(ThemeScreenInterface screen) {
+        this.themeScreen = screen;
+        registerView(screen);
+    }
+    
+    public void registerDifficultyScreen(DifficultyScreenInterface screen) {
+        this.difficultyScreen = screen;
+        registerView(screen);
+    }
+    
+    //endregion
+    
+    //region Actualización principal del juego
+    
+    /**
+     * Actualiza el estado del juego y todas las vistas
+     */
+    public void update() {
+        updateModelState();
+        updateViews();
     }
     
     /**
-     * Actualiza el estado del juego
+     * Actualiza el estado del modelo
      */
-    public void update() {
-        // Si el juego está pausado, no hacer nada
+    private void updateModelState() {
         if (model.isGamePaused()) {
             return;
         }
         
-        // En modo demo, manejar ambas paletas con IA
         if (model.isDemoMode()) {
             updateDemoMode();
             return;
         }
         
-        // Código existente para juego normal
-        // Actualizar posición de la paleta del jugador siempre
         model.getPlayerPaddle().update();
         
-        // Si el juego no está en curso o ha terminado, no actualizar más elementos
         if (!model.isGameRunning() || model.isGameOver()) {
             if (model.isGameOver()) {
-                model.getAiPaddle().setYVelocity(0);
-                model.getAiPaddle().update();
+                updateAIPaddleOnGameOver();
             }
             return;
         }
         
-        // Actualizar la paleta del oponente
-        if (model.isMultiplayerMode()) {
-            model.getAiPaddle().update();
-        } else {
-            updateAIPaddle();
-        }
-        
-        // Ajustar velocidad de la pelota según dificultad
+        updateOpponentPaddle();
         updateBallSpeed();
-        
-        // Actualizar elementos del juego
         model.getBall().update();
         checkCollision();
         checkScoring();
     }
     
+    private void updateAIPaddleOnGameOver() {
+        model.getAiPaddle().setYVelocity(0);
+        model.getAiPaddle().update();
+    }
+    
+    private void updateOpponentPaddle() {
+        if (model.isMultiplayerMode()) {
+            model.getAiPaddle().update();
+        } else {
+            updateAIPaddle();
+        }
+    }
+    
+    //endregion
+    
+    //region Lógica de puntuación
+    
     /**
-     * Actualiza el juego en modo demo (ambas paletas controladas por IA)
+     * Verifica si algún jugador ha anotado
      */
-    private void updateDemoMode() {
-        // Si el juego no está en curso, no hacer nada
-        if (!model.isGameRunning()) {
+    private void checkScoring() {
+        if (shouldSkipScoringCheck()) {
             return;
         }
         
-        // Ajustar velocidad de la pelota para demo (más suave)
-        model.getBall().setSpeedMultiplier(1.0f);
+        Ball ball = model.getBall();
         
-        // Actualizar la pelota
+        // El jugador anota
+        if (ball.getX() + ball.getWidth() >= GAME_WIDTH) {
+            handleScore("player", model.isMultiplayerMode() ? "Jugador 1" : "Tú");
+        }
+        // La IA anota
+        else if (ball.getX() <= 0) {
+            handleScore("ai", model.isMultiplayerMode() ? "Jugador 2" : "IA");
+        }
+    }
+    
+    private boolean shouldSkipScoringCheck() {
+        return model.isDemoMode() || model.isDelayAfterScore() || 
+               !model.isGameRunning() || model.isGamePaused();
+    }
+    
+    private void handleScore(String scorer, String winnerName) {
+        if ("player".equals(scorer)) {
+            model.incrementPlayerScore();
+            if (model.getPlayerScore() >= WINNING_SCORE) {
+                endGame(winnerName);
+            }
+        } else {
+            model.incrementAiScore();
+            if (model.getAiScore() >= WINNING_SCORE) {
+                endGame(winnerName);
+            }
+        }
+        
+        model.setLastScorer(scorer);
+        model.setDelayAfterScore(true);
+        resetBallAfterScoring();
+        startScoringDelay();
+    }
+    
+    private void endGame(String winnerName) {
+        model.setGameOver(true);
+        model.setWinner(winnerName);
+    }
+    
+    private void resetBallAfterScoring() {
+        Ball ball = model.getBall();
+        ball.setPosition((int)(CENTER_POSITION_X - ball.getWidth() / 2), 
+                        (int)(CENTER_POSITION_Y - ball.getHeight() / 2));
+        ball.setXVelocity(0);
+        ball.setYVelocity(0);
+    }
+    
+    /**
+     * Inicia un retraso después de anotar un punto
+     */
+    private void startScoringDelay() {
+        Timer delayTimer = new Timer(SCORING_DELAY_MS, e -> {
+            model.setDelayAfterScore(false);
+            
+            if (!model.isGameOver()) {
+                model.getBall().reset();
+            }
+        });
+        delayTimer.setRepeats(false);
+        delayTimer.start();
+    }
+    
+    //endregion
+    
+    //region Lógica de juego
+    
+    /**
+     * Actualiza el modo demo del juego
+     */
+    private void updateDemoMode() {
+        if (!model.isGameRunning()) {
+            model.setGameRunning(true);
+        }
+        
         model.getBall().update();
         
-        // Controlar la paleta del jugador con IA
         updateDemoPaddle(model.getPlayerPaddle(), true);
-        
-        // Controlar la paleta de la IA con IA
         updateDemoPaddle(model.getAiPaddle(), false);
         
-        // Comprobar colisiones de la pelota con las paletas
         checkCollision();
-        
-        // Comprobar si la pelota sale de los límites
-        // Nota: No usamos checkScoring() para evitar contar puntos
-        checkScoring();  // Ya hemos modificado este método para manejar modo demo
+        handleDemoBallReset();
+    }
+    
+    private void handleDemoBallReset() {
+        Ball ball = model.getBall();
+        if (ball.getX() + ball.getWidth() >= GAME_WIDTH || ball.getX() <= 0) {
+            ball.reset();
+        }
     }
     
     /**
      * Actualiza una paleta en modo demo
-     * @param paddle la paleta a actualizar
-     * @param isLeftPaddle true si es la paleta izquierda, false si es la derecha
      */
     private void updateDemoPaddle(Paddle paddle, boolean isLeftPaddle) {
         Ball ball = model.getBall();
         
-        // Centro de la paleta y de la pelota
         int paddleCenterY = paddle.y + paddle.height / 2;
         int ballCenterY = ball.y + ball.height / 2;
         
-        // Determinar si la pelota va hacia esta paleta
         boolean ballMovingTowardsPaddle = (isLeftPaddle && ball.getXVelocity() < 0) || 
-                                        (!isLeftPaddle && ball.getXVelocity() > 0);
+                                         (!isLeftPaddle && ball.getXVelocity() > 0);
         
-        // Variables para el control de IA
-        float reactionSpeed = 0.7f; // Velocidad media para demo
-        float predictFactor = 0.8f; // Alta precisión para evitar fallas
-        int deadZone = 5;           // Zona muerta pequeña para movimiento suave
-        
-        // Calcular el objetivo
+        float reactionSpeed = 0.7f;
         int targetY;
         
         if (ballMovingTowardsPaddle) {
-            // Si la pelota va hacia la paleta, predecir trayectoria
             float timeToIntercept;
             
             if (isLeftPaddle) {
@@ -125,129 +278,52 @@ public class GameController {
                                 Math.abs(ball.getXVelocity()));
             }
             
-            // Predicción con pequeño error para comportamiento natural
             float predictedY = ball.y + (ball.getYVelocity() * timeToIntercept);
-            
-            // Aplicar factor de predicción
-            targetY = (int)((predictedY + ball.height / 2) * predictFactor + ballCenterY * (1 - predictFactor));
+            targetY = (int) predictedY + ball.height / 2;
         } else {
-            // Si la pelota se aleja, volver gradualmente al centro
-            targetY = 600 / 2;
+            targetY = GAME_HEIGHT / 2;
         }
         
-        // Limitar dentro de los bordes
-        targetY = Math.max(targetY, paddle.height / 2);
-        targetY = Math.min(targetY, 600 - paddle.height / 2);
+        // Asegurar que la paleta permanezca dentro de los límites
+        targetY = boundValue(targetY, paddle.height / 2, GAME_HEIGHT - paddle.height / 2);
         
-        // Calcular la distancia al objetivo
-        int distanceToTarget = targetY - paddleCenterY;
-        
-        // Movimiento suave con zona muerta
-        if (Math.abs(distanceToTarget) > deadZone) {
-            // La velocidad es proporcional a la distancia, limitada por la velocidad máxima
-            float speed = Math.min(Math.abs(distanceToTarget) / 10.0f, 6.0f) * reactionSpeed;
-            paddle.setYVelocity((int)(Math.signum(distanceToTarget) * speed));
+        // Moverse hacia el objetivo
+        updatePaddleMovement(paddle, paddleCenterY, targetY, reactionSpeed);
+    }
+    
+    /**
+     * Actualiza la velocidad de la paleta para moverse hacia un objetivo
+     */
+    private void updatePaddleMovement(Paddle paddle, int currentY, int targetY, float speedFactor) {
+        if (currentY < targetY - 5) {
+            paddle.setYVelocity((int)(PADDLE_SPEED * speedFactor));
+        } else if (currentY > targetY + 5) {
+            paddle.setYVelocity((int)(-PADDLE_SPEED * speedFactor));
         } else {
-            // Detener cuando esté cerca del objetivo
             paddle.setYVelocity(0);
         }
         
-        // Actualizar posición
         paddle.update();
     }
     
     /**
-     * Actualiza la velocidad de la pelota según la dificultad actual
+     * Mantiene un valor dentro de los límites min y max
+     */
+    private int boundValue(int value, int min, int max) {
+        return Math.max(min, Math.min(value, max));
+    }
+    
+    /**
+     * Actualiza la velocidad de la pelota según la dificultad
      */
     private void updateBallSpeed() {
         Ball ball = model.getBall();
         
         if (model.getCurrentDifficulty() == GameModel.Difficulty.HARD && !model.isMultiplayerMode()) {
-            ball.setSpeedMultiplier(1.5f);
-        } else if (model.getCurrentDifficulty() == GameModel.Difficulty.MEDIUM && !model.isMultiplayerMode()) {
             ball.setSpeedMultiplier(1.2f);
         } else {
-            ball.setSpeedMultiplier(1.1f);
+            ball.setSpeedMultiplier(1.0f);
         }
-    }
-    
-    public GameModel getModel() {
-        return model;
-    }
-
-    /**
-     * Actualiza el movimiento de la IA
-     */
-    private void updateAIPaddle() {
-        Ball ball = model.getBall();
-        Paddle aiPaddle = model.getAiPaddle();
-        
-        // Convertir a int para manejar valores double devueltos
-        int aiPaddleCenterY = aiPaddle.y + aiPaddle.height / 2;
-        int ballCenterY = ball.y + ball.height / 2;
-        
-        // Ajustar variables según la dificultad
-        float reactionSpeed;
-        float predictFactor;
-        int deadZone;
-        
-        switch (model.getCurrentDifficulty()) {
-            case EASY:
-                reactionSpeed = 0.5f;
-                predictFactor = 0.3f;
-                deadZone = 15;
-                break;
-            case MEDIUM:
-                reactionSpeed = 0.7f;
-                predictFactor = 0.7f;
-                deadZone = 10;
-                break;
-            case HARD:
-                reactionSpeed = 0.9f;
-                predictFactor = 0.95f;
-                deadZone = 5;
-                break;
-            default:
-                reactionSpeed = 0.7f;
-                predictFactor = 0.7f;
-                deadZone = 10;
-        }
-        
-        // Para dificultades más altas, la IA intenta predecir la trayectoria
-        int targetY = ballCenterY;
-        
-        // Si la pelota se mueve hacia la IA, intenta predecir su trayectoria
-        if (ball.getXVelocity() > 0) {
-            // Cálculo básico de predicción
-            float timeToIntercept = (aiPaddle.x - ball.x) / (ball.getXVelocity() * model.getBall().getSpeedMultiplier());
-            float predictedY = ball.y + (ball.getYVelocity() * model.getBall().getSpeedMultiplier() * timeToIntercept);
-            
-            // Aplicar factor de predicción según dificultad
-            targetY = (int)((predictedY + ball.height / 2) * predictFactor + ballCenterY * (1 - predictFactor));
-        } else {
-            // Si la pelota se aleja, volver al centro gradualmente
-            targetY = (int)(300 * 0.3f + ballCenterY * 0.7f);
-        }
-        
-        // Limitar el objetivo dentro de los límites de la pantalla
-        targetY = Math.max(targetY, aiPaddle.height / 2);
-        targetY = Math.min(targetY, 600 - aiPaddle.height / 2);
-        
-        // Calcular la distancia al objetivo
-        int distanceToTarget = targetY - aiPaddleCenterY;
-        
-        // Movimiento suave con zona muerta para evitar oscilaciones
-        if (Math.abs(distanceToTarget) > deadZone) {
-            // La velocidad es proporcional a la distancia, limitada por la velocidad máxima
-            float speed = Math.min(Math.abs(distanceToTarget) / 10.0f, 6.0f) * reactionSpeed;
-            aiPaddle.setYVelocity((int)(Math.signum(distanceToTarget) * speed));
-        } else {
-            // Detener el movimiento cuando esté cerca del objetivo
-            aiPaddle.setYVelocity(0);
-        }
-        
-        // LÍNEA CRUCIAL QUE FALTA: Actualizar la posición de la paleta de la IA
-        aiPaddle.update();
     }
     
     /**
@@ -268,76 +344,284 @@ public class GameController {
     }
     
     /**
-     * Verifica si algún jugador ha anotado
+     * Actualiza la IA del oponente
      */
-    private void checkScoring() {
-        // Si estamos en modo demo, no contabilizar puntos
-        if (model.isDemoMode()) {
-            // Solo reiniciar la pelota cuando sale por los lados
-            Ball ball = model.getBall();
-            if (ball.getX() + ball.getWidth() >= 800 || ball.getX() <= 0) {
-                ball.reset();
-            }
-            return;
-        }
-        
-        // Si estamos en periodo de delay después de puntuar, no hacer nada
-        if (model.isDelayAfterScore()) {
-            return;
-        }
-        
-        // Código normal de puntuación para el juego real
+    private void updateAIPaddle() {
         Ball ball = model.getBall();
+        Paddle aiPaddle = model.getAiPaddle();
         
-        // El jugador anota
-        if (ball.getX() + ball.getWidth() >= 800) { // Usar constante WIDTH
-            model.incrementPlayerScore();
-            model.setLastScorer("player");
-            
-            // Iniciar delay después de puntuar
-            startScoringDelay();
-            
-            // Comprueba condición de victoria
-            if (model.getPlayerScore() >= WINNING_SCORE) {
-                model.setGameOver(true);
-                model.setWinner(model.isMultiplayerMode() ? "Jugador 1" : "Jugador");
-            }
+        int aiPaddleCenterY = aiPaddle.y + aiPaddle.height / 2;
+        int ballCenterY = ball.y + ball.height / 2;
+        
+        DifficultySettings settings = getDifficultySettings(model.getCurrentDifficulty());
+        
+        int targetY = calculateAITargetPosition(ball, aiPaddle, settings.predictFactor);
+        targetY = boundValue(targetY, aiPaddle.height / 2, GAME_HEIGHT - aiPaddle.height / 2);
+        
+        int distanceToTarget = targetY - aiPaddleCenterY;
+        
+        if (Math.abs(distanceToTarget) > settings.deadZone) {
+            aiPaddle.setYVelocity((int)(Math.signum(distanceToTarget) * PADDLE_SPEED * settings.reactionSpeed));
+        } else {
+            aiPaddle.setYVelocity(0);
         }
         
-        // La IA anota
-        if (ball.getX() <= 0) {
-            model.incrementAiScore();
-            model.setLastScorer("ai");
-            
-            // Iniciar delay después de puntuar
-            startScoringDelay();
-            
-            // Comprueba condición de victoria
-            if (model.getAiScore() >= WINNING_SCORE) {
-                model.setGameOver(true);
-                model.setWinner(model.isMultiplayerMode() ? "Jugador 2" : "IA");
-            }
+        aiPaddle.update();
+    }
+    
+    private int calculateAITargetPosition(Ball ball, Paddle aiPaddle, float predictFactor) {
+        int ballCenterY = ball.y + ball.height / 2;
+        
+        if (ball.getXVelocity() > 0) {
+            float timeToIntercept = Math.max(1, (aiPaddle.x - ball.x - ball.width) / 
+                                Math.abs(ball.getXVelocity()));
+            float predictedY = ball.y + (ball.getYVelocity() * timeToIntercept);
+            return (int)((predictedY + ball.height / 2) * predictFactor + ballCenterY * (1 - predictFactor));
+        } else {
+            return GAME_HEIGHT / 2;
         }
     }
     
     /**
-     * Inicia un retraso después de anotar un punto
+     * Configuración para los diferentes niveles de dificultad
      */
-    private void startScoringDelay() {
-        // Activa el estado de retraso
-        model.setDelayAfterScore(true);
+    private static class DifficultySettings {
+        float reactionSpeed;
+        float predictFactor;
+        int deadZone;
         
-        // Usa un temporizador para esperar antes de reiniciar la pelota
-        javax.swing.Timer delayTimer = new javax.swing.Timer(1500, _ -> {
-            // Después del retraso, reiniciar la pelota y desactivar el estado
-            model.getBall().reset();
-            model.setDelayAfterScore(false);
-        });
-        delayTimer.setRepeats(false); // Solo ejecuta una vez
-        delayTimer.start();
+        DifficultySettings(float reactionSpeed, float predictFactor, int deadZone) {
+            this.reactionSpeed = reactionSpeed;
+            this.predictFactor = predictFactor;
+            this.deadZone = deadZone;
+        }
     }
     
-    // Métodos para manejar acciones de juego
+    private DifficultySettings getDifficultySettings(GameModel.Difficulty difficulty) {
+        switch (difficulty) {
+            case EASY:
+                return new DifficultySettings(0.5f, 0.5f, 10);
+            case MEDIUM:
+                return new DifficultySettings(0.7f, 0.7f, 7);
+            case HARD:
+                return new DifficultySettings(0.9f, 0.9f, 3);
+            default:
+                return new DifficultySettings(0.7f, 0.7f, 7);
+        }
+    }
+    
+    //endregion
+    
+    //region Actualización de vistas
+    
+    /**
+     * Actualiza todas las vistas con datos del modelo
+     */
+    private void updateViews() {
+        if (gameScreen != null) {
+            updateGameScreen();
+        }
+        
+        if (menuScreen != null) {
+            updateMenuScreen();
+        }
+        
+        if (instructionsScreen != null) {
+            updateInstructionsScreen();
+        }
+        
+        if (themeScreen != null) {
+            updateThemeScreen();
+        }
+        
+        if (difficultyScreen != null) {
+            updateDifficultyScreen();
+        }
+    }
+    
+    /**
+     * Actualiza la pantalla de juego con los datos actuales
+     */
+    private void updateGameScreen() {
+        Theme theme = model.getCurrentTheme();
+        
+        // Configurar colores del tema
+        gameScreen.setBackgroundColor(theme.getBackgroundColor());
+        gameScreen.setTextColor(theme.getTextColor());
+        gameScreen.setDividerColor(theme.getDividerColor());
+        
+        // Configurar datos de juego
+        gameScreen.setScore(model.getPlayerScore(), model.getAiScore());
+        gameScreen.setMultiplayerMode(model.isMultiplayerMode());
+        gameScreen.setThemeName(theme.getName());
+        
+        // Datos de la pelota y paletas
+        updateGameScreenObjects(theme);
+        
+        // Estados especiales
+        updateGameScreenState();
+        
+        gameScreen.refresh();
+    }
+    
+    private void updateGameScreenObjects(Theme theme) {
+        Ball ball = model.getBall();
+        gameScreen.setBallData(ball.x, ball.y, ball.width, ball.height, theme.getBallColor());
+        
+        Paddle playerPaddle = model.getPlayerPaddle();
+        gameScreen.setPlayerPaddleData(
+            playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height, 
+            theme.getPaddleColor());
+        
+        Paddle aiPaddle = model.getAiPaddle();
+        gameScreen.setAIPaddleData(
+            aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height, 
+            theme.getPaddleColor());
+    }
+    
+    private void updateGameScreenState() {
+        boolean isActiveGame = model.isGamePaused() && model.isGameRunning();
+        gameScreen.showPauseScreen(isActiveGame);
+        gameScreen.setExitButtonVisible(isActiveGame);
+        
+        // Manejo de mensajes de Game Over
+        if (model.isGameOver()) {
+            String winnerText = model.isMultiplayerMode() ?
+                (model.getPlayerScore() > model.getAiScore() ? "Jugador 1" : "Jugador 2") :
+                (model.getPlayerScore() > model.getAiScore() ? "¡Has ganado!" : "La IA");
+            gameScreen.showGameOver(winnerText);
+        } else {
+            gameScreen.showGameOver(null);
+        }
+        
+        // Mensaje de delay después de puntuar
+        if (model.isDelayAfterScore() && model.isGameRunning() && !model.isGameOver()) {
+            String message = getScoringMessage(model.getLastScorer());
+            gameScreen.showDelayMessage(message);
+        } else {
+            gameScreen.showDelayMessage(null);
+        }
+    }
+    
+    private String getScoringMessage(String scorer) {
+        if ("player".equals(scorer)) {
+            return model.isMultiplayerMode() ? "¡Punto para Jugador 1!" : "¡Punto para ti!";
+        } else {
+            return model.isMultiplayerMode() ? "¡Punto para Jugador 2!" : "¡Punto para la IA!";
+        }
+    }
+    
+    /**
+     * Actualiza la pantalla de menú con los datos actuales
+     */
+    private void updateMenuScreen() {
+        Theme theme = model.getCurrentTheme();
+        
+        menuScreen.setGameOver(model.isGameOver());
+        menuScreen.setMultiplayerButtonText(model.isMultiplayerMode());
+        menuScreen.setThemeColors(
+            theme.getBackgroundColor(),
+            theme.getTextColor(),
+            theme.getButtonColor(),
+            theme.getButtonTextColor()
+        );
+        
+        menuScreen.refresh();
+    }
+    
+    /**
+     * Actualiza la pantalla de instrucciones
+     */
+    private void updateInstructionsScreen() {
+        Theme theme = model.getCurrentTheme();
+        
+        instructionsScreen.setMultiplayerMode(model.isMultiplayerMode());
+        instructionsScreen.setBackgroundColor(theme.getBackgroundColor());
+        instructionsScreen.setTextColor(theme.getTextColor());
+        instructionsScreen.setOverlayColor(theme.getPanelOverlayColor());
+        instructionsScreen.updateButtonThemes(theme.getButtonColor(), theme.getButtonTextColor());
+        
+        instructionsScreen.refresh();
+    }
+    
+    /**
+     * Actualiza la pantalla de temas
+     */
+    private void updateThemeScreen() {
+        Theme currentTheme = model.getCurrentTheme();
+        
+        themeScreen.setBackgroundColor(currentTheme.getBackgroundColor());
+        themeScreen.setTextColor(currentTheme.getTextColor());
+        themeScreen.setOverlayColor(currentTheme.getPanelOverlayColor());
+        themeScreen.setCurrentTheme(currentTheme.getName());
+        themeScreen.updateButtonThemes(currentTheme.getButtonColor(), currentTheme.getButtonTextColor());
+        
+        if (themeScreen.needsThemeData()) {
+            populateThemeData();
+        }
+        
+        themeScreen.refresh();
+    }
+    
+    private void populateThemeData() {
+        List<ThemeDTO> themeDTOs = new ArrayList<>();
+        for (Theme theme : Theme.AVAILABLE_THEMES) {
+            themeDTOs.add(convertThemeToDTO(theme));
+        }
+        themeScreen.setThemes(themeDTOs);
+        themeScreen.setNeedsThemeData(false);
+    }
+    
+    /**
+     * Actualiza la pantalla de dificultad
+     */
+    private void updateDifficultyScreen() {
+        Theme theme = model.getCurrentTheme();
+        
+        difficultyScreen.setBackgroundColor(theme.getBackgroundColor());
+        difficultyScreen.setTextColor(theme.getTextColor());
+        difficultyScreen.setOverlayColor(theme.getPanelOverlayColor());
+        difficultyScreen.updateButtonThemes(theme.getButtonColor(), theme.getButtonTextColor());
+        
+        difficultyScreen.setCurrentDifficulty(getDifficultyName(model.getCurrentDifficulty()));
+        difficultyScreen.setMultiplayerMode(model.isMultiplayerMode());
+        
+        difficultyScreen.refresh();
+    }
+    
+    private String getDifficultyName(GameModel.Difficulty difficulty) {
+        switch (difficulty) {
+            case EASY: return "Fácil";
+            case MEDIUM: return "Medio";
+            case HARD: return "Difícil";
+            default: return "Medio";
+        }
+    }
+    
+    /**
+     * Convierte un tema a DTO para pasar a la vista
+     */
+    private ThemeDTO convertThemeToDTO(Theme theme) {
+        return new ThemeDTO(
+            theme.getName(),
+            theme.getBackgroundColor(),
+            theme.getPaddleColor(),
+            theme.getBallColor(),
+            theme.getTextColor(),
+            theme.getDividerColor(),
+            theme.getButtonColor(),
+            theme.getButtonTextColor(),
+            theme.getPanelOverlayColor()
+        );
+    }
+    
+    //endregion
+    
+    //region Métodos de control para las vistas
+    
+    /**
+     * Inicia un nuevo juego
+     */
     public void startGame() {
         model.getBall().reset();
         model.getPlayerPaddle().reset();
@@ -352,19 +636,136 @@ public class GameController {
         model.setDemoMode(false);
     }
     
+    /**
+     * Pausa o reanuda el juego
+     */
     public void pauseGame() {
         model.setGamePaused(!model.isGamePaused());
     }
     
+    /**
+     * Establece la dificultad del juego
+     */
     public void setDifficulty(GameModel.Difficulty difficulty) {
         model.setCurrentDifficulty(difficulty);
     }
     
+    /**
+     * Establece el tema del juego
+     */
     public void setTheme(Theme theme) {
-        model.setCurrentTheme(theme);
+        if (theme != null) {
+            System.out.println("Cambiando tema a: " + theme.getName());
+            model.setCurrentTheme(theme);
+            updateViews();
+        }
     }
     
+    /**
+     * Alterna entre modo un jugador y multijugador
+     */
     public void toggleMultiplayerMode() {
         model.setMultiplayerMode(!model.isMultiplayerMode());
     }
+    
+    /**
+     * Regresa al menú principal desde el juego
+     */
+    public void exitToMainMenu() {
+        model.setGamePaused(false);
+        navigateToMainMenu();
+    }
+    
+    /**
+     * Obtiene un tema según su nombre
+     */
+    public Theme getThemeByName(String name) {
+        if (name != null) {
+            for (Theme theme : Theme.AVAILABLE_THEMES) {
+                if (theme.getName().equals(name)) {
+                    return theme;
+                }
+            }
+        }
+        return Theme.CLASSIC;
+    }
+    
+    /**
+     * Devuelve el modelo para el InputController
+     */
+    public GameModel getModel() {
+        return model;
+    }
+    
+    //endregion
+    
+    //region Navegación entre pantallas
+    
+    /**
+     * Interfaz para manejar navegación entre pantallas
+     */
+    public interface NavigationListener {
+        void showScreen(String screenName);
+    }
+    
+    /**
+     * Establece el listener para navegación
+     */
+    public void setNavigationListener(NavigationListener listener) {
+        this.navigationListener = listener;
+    }
+    
+    /**
+     * Notifica cambio de pantalla al listener
+     */
+    private void notifyScreenChange(String screenName) {
+        if (navigationListener != null) {
+            System.out.println("Navegando a: " + screenName);
+            navigationListener.showScreen(screenName);
+        } else {
+            System.err.println("Error: NavigationListener no configurado");
+        }
+    }
+    
+    /**
+     * Navega a la pantalla del menú principal
+     */
+    public void navigateToMainMenu() {
+        model.setCurrentScreen("MAIN_MENU");
+        notifyScreenChange("MAIN_MENU");
+    }
+    
+    /**
+     * Navega a la pantalla del juego
+     */
+    public void navigateToGame() {
+        model.setCurrentScreen("GAME");
+        notifyScreenChange("GAME");
+    }
+    
+    /**
+     * Navega a la pantalla de instrucciones
+     */
+    public void navigateToInstructions() {
+        model.setCurrentScreen("INSTRUCTIONS");
+        notifyScreenChange("INSTRUCTIONS");
+    }
+    
+    /**
+     * Navega a la pantalla de selección de dificultad
+     */
+    public void navigateToDifficulty() {
+        model.setCurrentScreen("DIFFICULTY");
+        notifyScreenChange("DIFFICULTY");
+    }
+    
+    /**
+     * Navega a la pantalla de selección de temas
+     */
+    public void navigateToThemes() {
+        model.setCurrentScreen("THEMES");
+        notifyScreenChange("THEMES");
+    }
+    
+    //endregion
 }

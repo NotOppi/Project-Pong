@@ -1,52 +1,72 @@
 package pong.game.view.screens;
 
-import pong.game.model.GameModel;
 import pong.game.controller.GameController;
+import pong.game.model.GameModel;
 import pong.game.view.ModernButton;
 import pong.game.view.PongGame;
+import pong.game.view.interfaces.DifficultyScreenInterface;
 
 import javax.swing.JPanel;
 import java.awt.Graphics;
 import java.awt.Font;
 import java.awt.Color;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
- * Pantalla de selección de dificultad
+ * Pantalla de selección de dificultad - MVC estricto
+ * Permite al usuario seleccionar el nivel de dificultad para el juego.
  */
-public class DifficultyScreen extends JPanel {
-    private GameModel model;
-    private GameController controller;
+public class DifficultyScreen extends JPanel implements DifficultyScreenInterface {
+    // Componentes UI
     private ModernButton easyButton;
     private ModernButton mediumButton;
     private ModernButton hardButton;
-    private ModernButton backButton;
     private ModernButton closeButton;
-    private String hoverDescription = "";
     
-    public DifficultyScreen(GameModel model, GameController controller) {
-        this.model = model;
+    // Controlador
+    private GameController controller;
+    
+    // Estado de la interfaz
+    private String hoverDescription = "";
+    private Color backgroundColor = Color.BLACK;
+    private Color textColor = Color.WHITE;
+    private Color overlayColor = new Color(0, 0, 0, 180);
+    private String currentDifficulty = "Medio";
+    private boolean isMultiplayerMode = false;
+    
+    /**
+     * Constructor de la pantalla de dificultad.
+     * @param controller El controlador del juego
+     */
+    public DifficultyScreen(GameController controller) {
         this.controller = controller;
+        controller.registerDifficultyScreen(this);
+        
         setLayout(null);
         setOpaque(false);
         
-        // Configurar botón de cerrar
+        initializeCloseButton();
+        initializeDifficultyButtons();
+    }
+    
+    /**
+     * Inicializa el botón de cierre de la pantalla.
+     */
+    private void initializeCloseButton() {
         closeButton = new ModernButton("X", true);
         closeButton.setBounds(720, 20, 40, 40);
         closeButton.setFocusable(false);
         closeButton.addActionListener(_ -> {
-            model.setCurrentScreen("MAIN_MENU");
+            controller.navigateToMainMenu();
         });
         add(closeButton);
-        
-        // Inicializar botones de dificultad
-        initializeDifficultyButtons();
-        
-        // Aplicar tema
-        if (model.getCurrentTheme() != null) {
-            applyThemeToButtons();
-        }
     }
     
+    /**
+     * Inicializa los botones de selección de dificultad.
+     */
     private void initializeDifficultyButtons() {
         // Botón Fácil
         easyButton = createDescriptiveButton("Fácil", 150, 
@@ -55,7 +75,7 @@ public class DifficultyScreen extends JPanel {
             "La velocidad de la pelota es estándar.",
             _ -> {
                 controller.setDifficulty(GameModel.Difficulty.EASY);
-                model.setCurrentScreen("MAIN_MENU");
+                controller.navigateToMainMenu();
             });
         
         // Botón Medio
@@ -64,7 +84,7 @@ public class DifficultyScreen extends JPanel {
             "ofreciendo un desafío equilibrado sin aumentar la velocidad de la pelota.",
             _ -> {
                 controller.setDifficulty(GameModel.Difficulty.MEDIUM);
-                model.setCurrentScreen("MAIN_MENU");
+                controller.navigateToMainMenu();
             });
         
         // Botón Difícil
@@ -73,44 +93,45 @@ public class DifficultyScreen extends JPanel {
             "además, la pelota viaja un poco más rápido para aumentar la intensidad.",
             _ -> {
                 controller.setDifficulty(GameModel.Difficulty.HARD);
-                model.setCurrentScreen("MAIN_MENU");
+                controller.navigateToMainMenu();
             });
-        
-        // Botón Volver
-        backButton = createButton("Volver", 380, _ -> {
-            model.setCurrentScreen("MAIN_MENU");
-        });
     }
     
     /**
-     * Crea un botón con configuraciones comunes
+     * Crea un botón con configuraciones comunes.
+     * @param text Texto del botón
+     * @param y Posición vertical
+     * @param action Acción al hacer clic
+     * @return El botón creado
      */
-    private ModernButton createButton(String text, int y, java.awt.event.ActionListener action) {
+    private ModernButton createButton(String text, int y, ActionListener action) {
         ModernButton button = new ModernButton(text);
         button.setBounds(PongGame.WIDTH / 2 - 100, y, 200, 45);
         button.setFocusable(false);
         button.addActionListener(action);
-        
-        // Aplica el tema actual
-        if (model.getCurrentTheme() != null) {
-            button.applyTheme(model.getCurrentTheme());
-        }
-        
         add(button);
         return button;
     }
     
     /**
-     * Crea un botón con descripción al pasar el ratón
+     * Crea un botón con descripción al pasar el ratón.
+     * @param text Texto del botón
+     * @param y Posición vertical
+     * @param hoverDesc Descripción al pasar el ratón
+     * @param action Acción al hacer clic
+     * @return El botón creado con descripción
      */
-    private ModernButton createDescriptiveButton(String text, int y, String hoverDesc, java.awt.event.ActionListener action) {
+    private ModernButton createDescriptiveButton(String text, int y, String hoverDesc, ActionListener action) {
         ModernButton button = createButton(text, y, action);
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent evt) {
                 hoverDescription = hoverDesc;
                 repaint();
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
+            
+            @Override
+            public void mouseExited(MouseEvent evt) {
                 hoverDescription = "";
                 repaint();
             }
@@ -118,60 +139,119 @@ public class DifficultyScreen extends JPanel {
         return button;
     }
     
-    private void applyThemeToButtons() {
-        if (easyButton != null) easyButton.applyTheme(model.getCurrentTheme());
-        if (mediumButton != null) mediumButton.applyTheme(model.getCurrentTheme());
-        if (hardButton != null) hardButton.applyTheme(model.getCurrentTheme());
-        if (backButton != null) backButton.applyTheme(model.getCurrentTheme());
-        if (closeButton != null) closeButton.applyTheme(model.getCurrentTheme());
+    /**
+     * Dibuja texto multilínea en la pantalla.
+     * @param g Contexto gráfico
+     * @param text Texto a dibujar
+     * @param x Posición horizontal
+     * @param y Posición vertical
+     */
+    private void drawMultiLineText(Graphics g, String text, int x, int y) {
+        // Calcular ancho máximo para centrado
+        int maxWidth = 0;
+        String[] lines = text.split("\n");
+        for (String line : lines) {
+            int lineWidth = g.getFontMetrics().stringWidth(line);
+            if (lineWidth > maxWidth) {
+                maxWidth = lineWidth;
+            }
+        }
+        
+        // Dibujar cada línea centrada horizontalmente
+        for (String line : lines) {
+            int lineWidth = g.getFontMetrics().stringWidth(line);
+            int adjustedX = x + (maxWidth - lineWidth) / 2;
+            g.drawString(line, adjustedX, y);
+            y += g.getFontMetrics().getHeight();
+        }
     }
     
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         
-        // Solo dibuja si hay un tema configurado
-        if (model.getCurrentTheme() == null) return;
-        
-        // Dibuja fondo semitransparente
-        g.setColor(model.getCurrentTheme().getPanelOverlayColor());
+        // Dibuja overlay semitransparente
+        g.setColor(overlayColor);
         g.fillRect(0, 0, getWidth(), getHeight());
         
-        // Dibuja título
-        g.setColor(model.getCurrentTheme().getTextColor());
+        // Dibuja título - Centrado mejorado
+        g.setColor(textColor);
         g.setFont(new Font("Arial", Font.BOLD, 36));
-        g.drawString("Selecciona Dificultad", PongGame.WIDTH / 2 - 180, 80);
+        String title = "Selecciona Dificultad";
+        int titleWidth = g.getFontMetrics().stringWidth(title);
+        g.drawString(title, getWidth() / 2 - titleWidth / 2, 80);
         
-        // Dibuja dificultad actual
+        // Dibuja dificultad actual - Centrado mejorado
         g.setFont(new Font("Arial", Font.PLAIN, 20));
-        String difficultyName;
-        switch (model.getCurrentDifficulty()) {
-            case EASY: difficultyName = "Fácil"; break;
-            case MEDIUM: difficultyName = "Medio"; break;
-            case HARD: difficultyName = "Difícil"; break;
-            default: difficultyName = model.getCurrentDifficulty().toString(); break;
-        }
-        g.drawString("Actual: " + difficultyName, PongGame.WIDTH / 2 - 80, 120);
+        String currentText = "Actual: " + currentDifficulty;
+        int currentWidth = g.getFontMetrics().stringWidth(currentText);
+        g.drawString(currentText, getWidth() / 2 - currentWidth / 2, 120);
         
         // Dibuja descripción al pasar el ratón, si hay alguna
         if (!hoverDescription.isEmpty()) {
             g.setFont(new Font("Arial", Font.PLAIN, 16));
-            drawMultiLineText(g, hoverDescription, PongGame.WIDTH / 2 - 220, 330);
+            drawMultiLineText(g, hoverDescription, PongGame.WIDTH / 2 - 220, 340);
         }
         
-        // Muestra nota de que la dificultad solo se aplica a un jugador
-        if (model.isMultiplayerMode()) {
+        // Muestra nota sobre modo multijugador si corresponde
+        if (isMultiplayerMode) {
             g.setFont(new Font("Arial", Font.ITALIC, 16));
-            g.setColor(Color.YELLOW);
-            g.drawString("Nota: La configuración de dificultad solo aplica en modo un jugador", 
-                         PongGame.WIDTH / 2 - 250, 430);
+            g.setColor(new Color(255, 215, 0, 220)); 
+            
+            String note = "Nota: La configuración de dificultad solo aplica en modo un jugador";
+            int noteWidth = g.getFontMetrics().stringWidth(note);
+            g.drawString(note, getWidth() / 2 - noteWidth / 2, 450);
         }
     }
     
-    private void drawMultiLineText(Graphics g, String text, int x, int y) {
-        for (String line : text.split("\n")) {
-            g.drawString(line, x, y);
-            y += g.getFontMetrics().getHeight();
+    // Implementaciones de DifficultyScreenInterface
+    @Override
+    public void setBackgroundColor(Color color) {
+        this.backgroundColor = color;
+    }
+    
+    @Override
+    public void setTextColor(Color color) {
+        this.textColor = color;
+    }
+    
+    @Override
+    public void setOverlayColor(Color color) {
+        this.overlayColor = color;
+    }
+    
+    @Override
+    public void setCurrentDifficulty(String difficultyName) {
+        this.currentDifficulty = difficultyName;
+    }
+    
+    @Override
+    public void setMultiplayerMode(boolean isMultiplayer) {
+        this.isMultiplayerMode = isMultiplayer;
+    }
+    
+    @Override
+    public void updateButtonThemes(Color buttonColor, Color buttonTextColor) {
+        if (easyButton != null) {
+            easyButton.setButtonColor(buttonColor);
+            easyButton.setTextColor(buttonTextColor);
         }
+        if (mediumButton != null) {
+            mediumButton.setButtonColor(buttonColor);
+            mediumButton.setTextColor(buttonTextColor);
+        }
+        if (hardButton != null) {
+            hardButton.setButtonColor(buttonColor);
+            hardButton.setTextColor(buttonTextColor);
+        }
+        if (closeButton != null) {
+            closeButton.setButtonColor(buttonColor);
+            closeButton.setTextColor(buttonTextColor);
+        }
+    }
+    
+    @Override
+    public void refresh() {
+        repaint();
     }
 }

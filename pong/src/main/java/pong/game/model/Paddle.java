@@ -8,10 +8,14 @@ import java.awt.Rectangle;
  * Representa una paleta en el juego de pong
  */
 public class Paddle extends Rectangle {
+    // Constants
+    private static final int GAME_HEIGHT = 600; // Extraído de límite hardcodeado
+    
+    // Fields
     private int yVelocity = 0;
     private final int startX;
     private final int startY;
-    private Color color = Color.WHITE;
+    private Color color;
     
     /**
      * Crea una nueva paleta en la posición especificada
@@ -45,15 +49,6 @@ public class Paddle extends Rectangle {
     }
     
     /**
-     * Reinicia la paleta a su posición inicial
-     */
-    public void reset() {
-        x = startX;
-        y = startY;
-        yVelocity = 0;
-    }
-    
-    /**
      * Actualiza la posición de la paleta
      */
     public void update() {
@@ -64,8 +59,8 @@ public class Paddle extends Rectangle {
         if (y < 0) {
             y = 0;
         }
-        if (y > 600 - height) { // 600 es el valor de PongGame.HEIGHT
-            y = 600 - height;
+        if (y > GAME_HEIGHT - height) {
+            y = GAME_HEIGHT - height;
         }
     }
     
@@ -76,5 +71,14 @@ public class Paddle extends Rectangle {
     public void draw(Graphics g) {
         g.setColor(color);
         g.fillRect(x, y, width, height);
+    }
+    
+    /**
+     * Reinicia la paleta a su posición inicial
+     */
+    public void reset() {
+        x = startX;
+        y = startY;
+        yVelocity = 0;
     }
 }
